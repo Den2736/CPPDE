@@ -1,0 +1,7 @@
+D:\GitHubRepos\C++DE\C++DE\C++DE\bin\Debug\C++DE.exe.config
+D:\GitHubRepos\C++DE\C++DE\C++DE\bin\Debug\C++DE.exe
+D:\GitHubRepos\C++DE\C++DE\C++DE\bin\Debug\C++DE.pdb
+D:\GitHubRepos\C++DE\C++DE\C++DE\obj\Debug\C++DE.csprojResolveAssemblyReference.cache
+D:\GitHubRepos\C++DE\C++DE\C++DE\obj\Debug\C++DE.csproj.CoreCompileInputs.cache
+D:\GitHubRepos\C++DE\C++DE\C++DE\obj\Debug\C++DE.exe
+D:\GitHubRepos\C++DE\C++DE\C++DE\obj\Debug\C++DE.pdb
