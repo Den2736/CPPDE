@@ -1,0 +1,6 @@
+int a = 0;
+bool b = false;
+for (int i = 0; i < 5; i++)
+{
+	float c = 5.0;
+}
