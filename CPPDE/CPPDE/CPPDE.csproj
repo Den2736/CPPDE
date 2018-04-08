@@ -42,6 +42,7 @@
     <Reference Include="System.Xml" />
   </ItemGroup>
   <ItemGroup>
+    <Compile Include="Models\Variable.cs" />
     <Compile Include="SemanticAnalyzer.cs" />
     <Compile Include="SyntaxAnalyzer.cs" />
     <Compile Include="LexicalAnalyzer.cs" />
