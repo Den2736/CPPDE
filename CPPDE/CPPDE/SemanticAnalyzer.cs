@@ -10,6 +10,19 @@ namespace CPPDE
 {
     partial class Program
     {
+        public enum NodeType
+        {
+            //Types of nodes of parse tree
+            Variable = 1,
+            ArithmeticOperator = 2,
+            LogicalOperator = 3,
+            AssignmentOperator = 4,
+            ConditionalOperator = 5,
+            CycleOperator = 6,
+            VariableDeclaration = 7,
+            MainNode = 8
+        }
+
         public static class SemanticAnalyzer
         {
             /// <summary>
