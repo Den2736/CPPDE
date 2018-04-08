@@ -1,0 +1,3 @@
+D:\Desktop\Translator\CPPDE\CPPDE\CPPDE\bin\Debug\C++DE.exe.config
+D:\Desktop\Translator\CPPDE\CPPDE\CPPDE\obj\Debug\C++DE.exe
+D:\Desktop\Translator\CPPDE\CPPDE\CPPDE\obj\Debug\C++DE.pdb
