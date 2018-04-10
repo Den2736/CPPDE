@@ -1,4 +1,5 @@
-﻿using CPPDE.Models.Exceptions;
+﻿using C__DE.Models;
+using CPPDE.Models.Exceptions;
 using CPPDE.Models.Exceptions.LexicalExceptions;
 using System;
 using System.Collections.Generic;
@@ -10,28 +11,30 @@ namespace CPPDE
 {
     public partial class Program
     {
+        public static IEnumerable<string> Types = new string[] { "int", "char", "string", "float", "bool" };
+
         /// <summary>
         /// Lexemes in format (line number - lexeme)
         /// </summary>
-        public static Dictionary<int, string> Lexemes { get; set; }
+        public static Dictionary<int, IEnumerable<string>> Lexemes { get; set; }
 
         /// <summary>
         /// List of variables in format (identifier - type)
         /// </summary>
-        public static List<KeyValuePair<string, Type>> Variables { get; set; }
-        
+        public static List<Variable> Variables { get; set; }
+
         static void Main(string[] args)
         {
             // TODO get sourcePath from args
 
             try
             {
-                Console.Write($"Paste path to the source file:{Environment.NewLine}" +
-                    $">");
+                Console.Write($"Paste path to the source file:{Environment.NewLine}");
                 string sourcePath = Console.ReadLine();
                 LexicalAnalyzer.Parse(sourcePath);
+                var a = 0;
             }
-            catch(CompilerException e)
+            catch (CompilerException e)
             {
                 Console.WriteLine(e.Message);
             }
