@@ -42,6 +42,9 @@
     <Reference Include="System.Xml" />
   </ItemGroup>
   <ItemGroup>
+    <Compile Include="Models\Exceptions\SemanticExceptions\SemanticException.cs" />
+    <Compile Include="Models\Exceptions\SemanticExceptions\UndefinedVariableException.cs" />
+    <Compile Include="Models\NodeClasses.cs" />
     <Compile Include="Models\Variable.cs" />
     <Compile Include="SemanticAnalyzer.cs" />
     <Compile Include="SyntaxAnalyzer.cs" />

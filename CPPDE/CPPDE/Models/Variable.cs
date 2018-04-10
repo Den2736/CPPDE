@@ -11,6 +11,8 @@ namespace C__DE.Models
         public string Name { get; set; }
         public string Type { get; set; }
         public bool IsDeclared { get; set; }
+        public string AlternativeName { get; set; }
+        public bool IsUsed { get; set; }
 
         public override string ToString()
         {
