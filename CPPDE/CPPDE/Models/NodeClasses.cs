@@ -11,91 +11,193 @@ namespace C__DE.Models
     public enum NodeType
     {
         //Types of nodes of parse tree
-        Constant =0,
-        Variable = 1,
-        ArithmeticOperator = 2,
-        ComparisonOperator=3,
-        LogicalOperator = 4,
-        AssignmentOperator = 5,
-        ConditionalOperator = 6,
-        CycleOperator = 7,
-        VariableDeclaration = 8,
-        RootNode = 9
+        Constant,
+        Variable,
+        ArithmeticOperator,
+        ComparisonOperator,
+        LogicalOperator,
+        AssignmentOperator,
+        ConditionalOperator,
+        CycleOperator,
+        VariableDeclaration,
+        RootNode,
+        ReadNode,
+        WriteNode
     }
 
     public abstract class Node
     {
-        public NodeType TypeOfNode;
+        public NodeType TypeOfNode; //Тип узла
         public BlockNode parentBlock; //ссылка на родительский блок (именно блок - if, while, корневой и т.д.)
-        public int LineNumber; //номер строки, где начинается узел
+        public int LineNumber; //номер строки, где начинается узел (его надо присваивать вручную при синтаксическом анализе)
     }
 
     public abstract class BlockNode : Node
     {
-        List<Node> ChildrenOperators; //Ссылки на все внутренние операторы
-        List<Variable> BlockVariables; //Переменные блока
-    }
+        public List<Node> ChildrenOperators; //Ссылки на все внутренние операторы
+        public List<Variable> BlockVariables; //Переменные блока
 
-    public abstract class AtomNode : Node //в этом классе всё к семантике
-    {
-        string ValueType;
-        string VariableName; //имя промежуточной переменной, где будет храниться результат
-    }
-
-    public class ConstantNode: VariableNode
-    {
-        ConstantNode(int ConstantNumber)
+        public void AddOperator(Node Operator)//метод добавления оператора в список дочерних
         {
-            MainVariable = new Variable();
-            MainVariable.AlternativeName = "const_" + ConstantNumber.ToString();
+            ChildrenOperators.Add(Operator);
+            Operator.parentBlock = this;
         }
     }
-    //объединить тип "Константа" и "Переменная"
+
+    public abstract class AtomNode : Node
+    {
+        public Variable MainVariable;
+        //в зависимости от типа узла ссылка на переменную в таблице или на временную переменную
+    }
+
+    public class ConstantNode: AtomNode
+    {
+        public string ConstantValue; //значение вне зависимости от типа будет храниться в строковом виде
+        public ConstantNode(string Type, string ConstValue)
+        {
+            TypeOfNode = NodeType.Constant;
+            MainVariable = new Variable();//создаём новую временную переменную
+            MainVariable.IsDeclared = true;
+            MainVariable.WasUsed=true;
+            //Это никуда в таблицу переменных не заносится, просто само себе
+        }
+    }
+
     public class VariableNode : AtomNode
     {
-        public Variable MainVariable; //просто ссылка на переменную в таблице
+        VariableNode(Variable Var)
+        {
+            MainVariable = Var;//просто тупо создаётся ссылка
+            TypeOfNode = NodeType.Variable;
+        }
     }
 
-    public class ArithmeticOperatorNode: VariableNode
+    public class BinaryOperatorNode: AtomNode //логический, сравнения или арифметический
     {
-        public string ArithmeticOperation;
-        public VariableNode SecondOperand;//а если константа?
-    }
-    //Может, их как-то объединить?
-    public class ComparisionOperator: VariableNode
-    {
-        public string ComparisionOperation;//сам оператор
-        public VariableNode SecondOperand;
+        //может быть и унарный - как частный случай
+        public bool IsUnary;
+        public string Operator;
+        public AtomNode FirstOperand;
+        public AtomNode SecondOperand;
+        public BinaryOperatorNode(string Operation, AtomNode First, AtomNode Second, NodeType OperatorType)
+        {
+            Operator = Operation;
+            FirstOperand = First;
+            SecondOperand = Second;
+            TypeOfNode = OperatorType;
+            IsUnary = false;
+            //переменную, возможно, создавать не понадобится
+        }
+        public BinaryOperatorNode(string Operation, AtomNode First, NodeType OperatorType)
+        {
+            Operator = Operation;
+            FirstOperand = First;
+            SecondOperand = null;
+            TypeOfNode = OperatorType;
+            IsUnary = false;
+        }
     }
 
-    public class LogicalNode: VariableNode
+    public class VariableDeclarationNode: AtomNode
     {
-        public string LogicalOperation;
-        public VariableNode SecondOperand; //Для одноместной операции тут будет null
-    }
-
-    public class VariableDeclaration: VariableNode
-    {
+        //дополнительных полей нет
         //при семантическом анализе поставить isDeclared=true у mainVariable
+        public VariableDeclarationNode(Variable var)
+        {
+            MainVariable = var;
+            MainVariable.IsDeclared = true;
+            TypeOfNode = NodeType.VariableDeclaration;
+        }
     }
 
-    public class ConditionalOperator: BlockNode
+    public class ConditionalOperatorNode: BlockNode
     {
-        public VariableNode Condition;
+        public AtomNode Condition;
         public List<Node> ElseOperators; //если нет ветки else - пусто либо null
+        public ConditionalOperatorNode(AtomNode ConditionNode)
+        {
+            Condition = ConditionNode;//ссылка на узел-условие (на переменную, константу или последнее действие выражения)
+            ConditionNode.parentBlock = this;
+            ElseOperators = new List<Node>();
+            ChildrenOperators = new List<Node>();
+            TypeOfNode = NodeType.ConditionalOperator;
+        }
+        
+        public void AddElseOperator(Node Operator)
+        {
+            ChildrenOperators.Add(Operator);
+            Operator.parentBlock = this;
+        }
     }
 
     public class CycleOperator: BlockNode
     {
-        public VariableNode BeginningActivity;
-        public VariableNode ConditionActivity;
-        public VariableNode IterationActivity; // у while первое и третье null
+        public AtomNode BeginningActivity;
+        public AtomNode ContinueCondition;
+        public AtomNode IterationActivity; // у while первое и третье null
         public bool IsPredCondition; //true - c предусловием, false - с постусловием
+
+        public CycleOperator(AtomNode Beg, AtomNode Cond, AtomNode IterAct)//конструктор для цикла for
+        {
+            BeginningActivity = Beg;
+            ContinueCondition = Cond;
+            IterationActivity = IterAct;
+            IsPredCondition = true;
+            Beg.parentBlock = this;
+            Cond.parentBlock = this;
+            IterAct.parentBlock = this;
+            TypeOfNode = NodeType.CycleOperator;
+        }
+
+        public CycleOperator(bool IsPred, AtomNode Cond)//конструктор для цикла while
+        {
+            BeginningActivity = null;
+            ContinueCondition = Cond;
+            IterationActivity = null;
+            IsPredCondition = IsPred;
+            Cond.parentBlock = this;
+            TypeOfNode = NodeType.CycleOperator;
+        }
     }
 
-    public class AssignmentOperator
+    public class AssignmentOperator: AtomNode
     {
-        public VariableNode RightPart;
+        //оператор присваивания, сюда входят также операторы += -= и так далее
+        public AtomNode RightPart; //присваиваться может только для переменной
+        public AssignmentOperator(Variable Var, AtomNode Expression)
+        {
+            MainVariable = Var;
+            RightPart = Expression;
+            TypeOfNode = NodeType.AssignmentOperator;
+        }
     }
-    //У root никаких дополнительных полей и действий
+
+    public class MainRootNode: BlockNode
+    {
+        public MainRootNode()
+        {
+            TypeOfNode = NodeType.RootNode;
+        }
+    }
+
+    //С чтением и записью хз как, пока строка будет
+    public class ReadOperator: AtomNode
+    {
+        public string Source;
+        public ReadOperator(string File)
+        {
+            Source = File;
+            TypeOfNode = NodeType.ReadNode;
+        }
+    }
+
+    public class WriteOperator : AtomNode
+    {
+        public string Source;
+        public WriteOperator(string File)
+        {
+            Source = File;
+            TypeOfNode = NodeType.WriteNode;
+        }
+    }
 }
