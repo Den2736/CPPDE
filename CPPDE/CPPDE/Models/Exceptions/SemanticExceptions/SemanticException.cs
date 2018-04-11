@@ -9,6 +9,6 @@ namespace C__DE.Models.Exceptions.SemanticExceptions
 {
     class SemanticException: CompilerException
     {
-
+        public override string Message => "SemanticError.";
     }
 }
