@@ -10,7 +10,7 @@ namespace CPPDE
 {
     partial class Program
     {
-        
+
         public static class SemanticAnalyzer
         {
             /// <summary>

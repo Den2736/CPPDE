@@ -8,7 +8,7 @@ namespace C__DE.Models.Exceptions.SemanticExceptions
 {
     class UndefinedVariableException: SemanticException
     {
-        public override string Message => $"Unidentified variable {VariableName} used in line {LineNumber} ";
+        public override string Message => $"Unidentified identifier {VariableName} in line {LineNumber} ";
         public int LineNumber { get; }
         public string VariableName { get; }
 
