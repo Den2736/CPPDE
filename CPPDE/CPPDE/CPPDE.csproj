@@ -48,6 +48,7 @@
     <Compile Include="Models\Exceptions\SemanticExceptions\UndefinedVariableException.cs" />
     <Compile Include="Models\IntermediateCodeNode.cs" />
     <Compile Include="Models\NodeClasses.cs" />
+    <Compile Include="Models\SemanticFunctions.cs" />
     <Compile Include="Models\Variable.cs" />
     <Compile Include="SemanticAnalyzer.cs" />
     <Compile Include="SyntaxAnalyzer.cs" />
