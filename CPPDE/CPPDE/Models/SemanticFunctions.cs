@@ -9,6 +9,7 @@ namespace C__DE.Models
 {
     public abstract partial class Node
     {
+        public abstract bool SemanticAnalysis(); //возвращает true, если нет семантических ошибок
     }
 
     public abstract partial class BlockNode : Node
@@ -29,6 +30,11 @@ namespace C__DE.Models
             MainVariable.AlternativeName = "const_" + count.consts.ToString();
             ++count.consts;
         }
+
+        public override bool SemanticAnalysis()
+        {
+            return true;
+        }
     }
 
     public partial class VariableNode : AtomNode
@@ -47,6 +53,16 @@ namespace C__DE.Models
                 if (parent.TypeOfNode == NodeType.RootNode) //если добрались до родительского и не нашли, то переменная не объявлена
                     throw new UndefinedVariableException(LineNumber, VariableName);
                 parent = parent.parentBlock;//идём дальше вверх по иерархии блоков
+            }
+        }
+
+        public override bool SemanticAnalysis()
+        {
+            if (MainVariable.IsDeclared)
+                return true;
+            else
+            {
+                throw new UndefinedVariableException(LineNumber, MainVariable.Name);
             }
         }
     }
@@ -161,6 +177,7 @@ namespace C__DE.Models
                 MainVariable.Type = "bool";
             else throw new IncompatibleTypesException(LineNumber, FirstOperand.MainVariable.Type, SecondOperand.MainVariable.Type);
         }
+
         public override void SetMainVariable(Counters count)
         {
             MainVariable = new Variable();
@@ -225,6 +242,7 @@ namespace C__DE.Models
             MainVariable = new Variable(); //создаём новую переменную и наделяем её новыми свойствами
             MainVariable.Name = DeclaratedVariable.VariableName;
             MainVariable.AlternativeName = "var_" + count.vars.ToString();
+            MainVariable.IsDeclared = true;
             count.vars++;
             parentBlock.BlockVariables.Add(MainVariable); //помещаем в список переменных данного блока
             DeclaratedVariable.SetMainVariable(count);
@@ -248,9 +266,14 @@ namespace C__DE.Models
 
     public partial class AssignmentOperator : AtomNode
     {
+
         public override void SetMainVariable(Counters count)
         {
-
+            MainVariable = new Variable();
+            MainVariable.Name = AssignedVariable.MainVariable.Name;
+            MainVariable.AlternativeName = AssignedVariable.MainVariable.AlternativeName;
+            MainVariable.IsDeclared = AssignedVariable.MainVariable.IsDeclared;
+            MainVariable.Type = AssignedVariable.MainVariable.Type;
         }
     }
 
@@ -261,10 +284,25 @@ namespace C__DE.Models
     //С чтением и записью хз как, пока строка будет
     public partial class ReadOperator : AtomNode
     {
-       
+        public override void SetMainVariable(Counters count)
+        {
+            MainVariable = new Variable();
+            MainVariable.Name = ReadVariable.MainVariable.Name;
+            MainVariable.AlternativeName = ReadVariable.MainVariable.AlternativeName;
+            MainVariable.IsDeclared = ReadVariable.MainVariable.IsDeclared;
+            MainVariable.Type = ReadVariable.MainVariable.Type;
+        }
     }
 
     public partial class WriteOperator : AtomNode
     {
+        public override void SetMainVariable(Counters count)
+        {
+            MainVariable = new Variable();
+            MainVariable.Name = WriteVariable.MainVariable.Name;
+            MainVariable.AlternativeName = WriteVariable.MainVariable.AlternativeName;
+            MainVariable.IsDeclared = WriteVariable.MainVariable.IsDeclared;
+            MainVariable.Type = WriteVariable.MainVariable.Type;
+        }
     }
 }
