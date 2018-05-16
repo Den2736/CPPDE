@@ -12,6 +12,8 @@ namespace C__DE.Models
         public int vars = 0;
         public int consts = 0;
         public int temps = 0; //счётчики для переменных, констант и временных ячеек
+        public int ifs = 0;
+        public int cycles = 0;
     }
 
     public enum NodeType
@@ -84,9 +86,9 @@ namespace C__DE.Models
     public partial class VariableNode : AtomNode
     {
         public string VariableName;
-        VariableNode(string Var, int numLine)
+        public VariableNode(string Var, int numLine)
         {
-            VariableName = Var;//просто тупо создаётся ссылка
+            VariableName = Var;
             TypeOfNode = NodeType.Variable;
             LineNumber = numLine;
         }
