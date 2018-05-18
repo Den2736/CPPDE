@@ -7,13 +7,23 @@ using System.Threading.Tasks;
 
 namespace C__DE.Models
 {
-    public class Counters
+
+    public static class Counters
     {
-        public int vars = 0;
-        public int consts = 0;
-        public int temps = 0; //счётчики для переменных, констант и временных ячеек
-        public int ifs = 0;
-        public int cycles = 0;
+        public static int vars = 0;
+        public static int consts = 0;
+        public static int temps = 0; //счётчики для переменных, констант и временных ячеек
+        public static int ifs = 0;
+        public static int cycles = 0;
+    }
+
+    public static class Operations
+    {
+        public static List<string> LogicalOperations = new List<string> { "&&", "||", "!" };
+        public static List<string> ArithmeticOperations = new List<string> { "+", "-", "*", "/", "%" };
+        public static List<string> BitOperations = new List<string> { "&", "|", "^" };
+        public static List<string> ComparationOperations = new List<string> { "==", "!=", ">", "<", "<=", ">=" };
+        public static List<string> AssignmentOperations = new List<string> { "=", "+=", "-=", "*=", "/=", "%="};
     }
 
     public enum NodeType
@@ -60,6 +70,9 @@ namespace C__DE.Models
 
     public abstract partial class AtomNode : Node
     {
+        //это для синтаксического анализа
+        public string Value;
+
         public Variable MainVariable;
         //в зависимости от типа узла ссылка на переменную в таблице или на временную переменную
     }
@@ -74,6 +87,7 @@ namespace C__DE.Models
             MainVariable.IsDeclared = true;
             MainVariable.WasUsed=true;
             LineNumber = numLine;
+            Value = ConstValue;
             //Это никуда в таблицу переменных не заносится, просто само себе
         }
         public override void SetParentBlock(BlockNode Parent)
@@ -85,10 +99,11 @@ namespace C__DE.Models
 
     public partial class VariableNode : AtomNode
     {
-        public string VariableName;
+        //public string VariableName;
         public VariableNode(string Var, int numLine)
         {
-            VariableName = Var;
+            //VariableName = Var;
+            Value = Var;
             TypeOfNode = NodeType.Variable;
             LineNumber = numLine;
         }
@@ -103,27 +118,44 @@ namespace C__DE.Models
     {
         //может быть и унарный - как частный случай
         public bool IsUnary;
-        public string Operator;
+        //public string Operator;
         public AtomNode FirstOperand;
         public AtomNode SecondOperand;
-        public BinaryOperatorNode(string Operation, AtomNode First, AtomNode Second, NodeType OperatorType, int numLine)
+
+        //Создание бинарного оператора
+        public BinaryOperatorNode(string Operation, AtomNode First, AtomNode Second, int numLine)
         {
-            Operator = Operation;
+            //Operator = Operation;
+            Value = Operation;
             FirstOperand = First;
             SecondOperand = Second;
-            TypeOfNode = OperatorType;
             IsUnary = false;
             LineNumber = numLine;
+            if (Operations.ArithmeticOperations.Contains(Operation))
+                TypeOfNode = NodeType.ArithmeticOperator;
+            else if (Operations.BitOperations.Contains(Operation))
+                TypeOfNode = NodeType.BitOperator;
+            else if (Operations.ComparationOperations.Contains(Operation))
+                TypeOfNode = NodeType.ComparisonOperator;
+            else if (Operations.LogicalOperations.Contains(Operation))
+                TypeOfNode = NodeType.LogicalOperator;
+                
             //переменную, возможно, создавать не понадобится
         }
-        public BinaryOperatorNode(string Operation, AtomNode First, NodeType OperatorType, int numLine)
+
+        //создание унарного оператора
+        public BinaryOperatorNode(string Operation, AtomNode First, int numLine)
         {
-            Operator = Operation;
+            //Operator = Operation;
+            Value = Operation;
             FirstOperand = First;
             SecondOperand = null;
-            TypeOfNode = OperatorType;
             IsUnary = false;
             LineNumber = numLine;
+            if (Operation == "-")
+                TypeOfNode = NodeType.ArithmeticOperator;
+            else
+                TypeOfNode = NodeType.LogicalOperator;
         }
         public override void SetParentBlock(BlockNode Parent)
         {
