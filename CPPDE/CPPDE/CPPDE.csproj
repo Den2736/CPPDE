@@ -48,6 +48,7 @@
     <Compile Include="Models\Exceptions\SemanticExceptions\UndefinedVariableException.cs" />
     <Compile Include="Models\Exceptions\SyntaxExceptions\ExpectedAnotheSympolException.cs" />
     <Compile Include="Models\Exceptions\SyntaxExceptions\SyntaxException.cs" />
+    <Compile Include="Models\Exceptions\SyntaxExceptions\UnexpectedEOFException.cs" />
     <Compile Include="Models\Exceptions\SyntaxExceptions\UnexpectedTokenException.cs" />
     <Compile Include="Models\Exceptions\SyntaxExceptions\UnmatchedBracketExpression.cs" />
     <Compile Include="Models\IntermediateCodeNode.cs" />

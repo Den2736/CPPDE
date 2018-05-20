@@ -222,7 +222,7 @@ namespace C__DE.Models
 
     public partial class ConditionalBranchNode: BlockNode//какая-то из веток if или else
     {
-        public ConditionalBranchNode()
+        public ConditionalBranchNode(int numLine)
         {
             ChildrenOperators = new List<Node>();
             TypeOfNode = NodeType.ConditionalBranch;
@@ -290,7 +290,7 @@ namespace C__DE.Models
         public MainRootNode(int numLine)
         {
             TypeOfNode = NodeType.RootNode;
-            Counters count = new Counters();
+            LineNumber = numLine;
         }
     }
 
