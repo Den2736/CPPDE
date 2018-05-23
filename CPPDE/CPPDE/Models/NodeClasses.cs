@@ -168,7 +168,7 @@ namespace C__DE.Models
 
     public partial class VariableDeclarationNode: AtomNode
     {
-        string Type;
+        public string Type;
         //при семантическом анализе поставить isDeclared=true у mainVariable
         VariableNode DeclaratedVariable;
         public VariableDeclarationNode(VariableNode var, string VarType, int numLine)
@@ -231,18 +231,20 @@ namespace C__DE.Models
 
     public partial class CycleOperator: BlockNode
     {
-        public AtomNode BeginningActivity;
+        public List<AtomNode> BeginningActivity;
         public AtomNode ContinueCondition;
         public AtomNode IterationActivity; // у while первое и третье null
         public bool IsPredCondition; //true - c предусловием, false - с постусловием
 
-        public CycleOperator(AtomNode Beg, AtomNode Cond, AtomNode IterAct, int numLine)//конструктор для цикла for
+        public CycleOperator(List<AtomNode> Beg, AtomNode Cond, AtomNode IterAct, int numLine)//конструктор для цикла for
         {
             BeginningActivity = Beg;
             ContinueCondition = Cond;
             IterationActivity = IterAct;
             IsPredCondition = true;
-            Beg.SetParentBlock(this);
+
+            foreach (var oper in Beg)
+                oper.SetParentBlock(this);
             Cond.SetParentBlock(this);
             IterAct.SetParentBlock(this);
             TypeOfNode = NodeType.CycleOperator;

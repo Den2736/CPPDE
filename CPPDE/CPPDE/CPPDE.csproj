@@ -44,6 +44,7 @@
   <ItemGroup>
     <Compile Include="Models\Exceptions\SemanticExceptions\IncompatibleTypesException.cs" />
     <Compile Include="Models\Exceptions\SemanticExceptions\InvalidTypeException.cs" />
+    <Compile Include="Models\Exceptions\SemanticExceptions\RedeclaringVariableException.cs" />
     <Compile Include="Models\Exceptions\SemanticExceptions\SemanticException.cs" />
     <Compile Include="Models\Exceptions\SemanticExceptions\UndefinedVariableException.cs" />
     <Compile Include="Models\Exceptions\SyntaxExceptions\ExpectedAnotheSympolException.cs" />

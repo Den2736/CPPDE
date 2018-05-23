@@ -10,6 +10,7 @@ namespace C__DE.Models
     public abstract partial class Node
     {
         public abstract bool SemanticAnalysis(); //возвращает true, если нет семантических ошибок
+        public bool IsSemanticCorrect;
     }
 
     public abstract partial class BlockNode : Node
@@ -19,52 +20,38 @@ namespace C__DE.Models
 
     public abstract partial class AtomNode : Node
     {
-        public abstract void SetMainVariable(Counters count);
+        //public abstract void SetMainVariable();
         //в зависимости от типа узла ссылка на переменную в таблице или на временную переменную
     }
 
     public partial class ConstantNode : AtomNode
     {
-        public override void SetMainVariable(Counters count)
-        {
-            MainVariable.AlternativeName = "const_" + count.consts.ToString();
-            ++count.consts;
-        }
-
         public override bool SemanticAnalysis()
         {
+            IsSemanticCorrect = true;
             return true;
         }
     }
 
     public partial class VariableNode : AtomNode
     {
-        public override void SetMainVariable(Counters count)
+        public override bool SemanticAnalysis()
         {
             BlockNode parent = parentBlock; //ищем переменную в родительском блоке
             while (true)
             {
-                Variable possibleVariable = parent.BlockVariables.FirstOrDefault(var => var.Name == VariableName);
+                Variable possibleVariable = parent.BlockVariables.FirstOrDefault(var => var.Name == Value);
                 if (possibleVariable.Name != null)
                 {
                     MainVariable = possibleVariable;
-                    return;
+                    return true;
                 }
                 if (parent.TypeOfNode == NodeType.RootNode) //если добрались до родительского и не нашли, то переменная не объявлена
-                    throw new UndefinedVariableException(LineNumber, VariableName);
+                    throw new UndefinedVariableException(LineNumber, Value);
                 parent = parent.parentBlock;//идём дальше вверх по иерархии блоков
             }
         }
 
-        public override bool SemanticAnalysis()
-        {
-            if (MainVariable.IsDeclared)
-                return true;
-            else
-            {
-                throw new UndefinedVariableException(LineNumber, MainVariable.Name);
-            }
-        }
     }
 
     public partial class BinaryOperatorNode : AtomNode //логический, сравнения или арифметический
@@ -115,7 +102,7 @@ namespace C__DE.Models
                     }
                 case "bool":
                     {
-                        throw new InvalidTypeException(LineNumber, "bool", Operator);
+                        throw new InvalidTypeException(LineNumber, "bool", Value);
                     }
             }
         }
@@ -145,7 +132,7 @@ namespace C__DE.Models
                         break;
                     }
                 default:
-                    { throw new InvalidTypeException(LineNumber, FirstOperand.MainVariable.Type, Operator); }
+                    { throw new InvalidTypeException(LineNumber, FirstOperand.MainVariable.Type, Value); }
             }
         }
 
@@ -178,58 +165,78 @@ namespace C__DE.Models
             else throw new IncompatibleTypesException(LineNumber, FirstOperand.MainVariable.Type, SecondOperand.MainVariable.Type);
         }
 
-        public override void SetMainVariable(Counters count)
+        public override bool SemanticAnalysis()
         {
-            MainVariable = new Variable();
-            MainVariable.AlternativeName = "temp_" + count.temps.ToString();
-            count.temps++;
-            FirstOperand.SetMainVariable(count);
-            if (IsUnary)
+            try
             {
-                if (Operator == "+" || Operator == "-")
-                    if (FirstOperand.MainVariable.Type == "int" || FirstOperand.MainVariable.Type == "float")
-                    {
-                        MainVariable.Type = FirstOperand.MainVariable.Type; //если унарный, то тип совпадает с типом операнда
-                        return;
-                    }
-                    else throw new InvalidTypeException(LineNumber, FirstOperand.MainVariable.Type, Operator);
-                if (Operator == "!")
-                {
-                    if (FirstOperand.MainVariable.Type == "bool" || FirstOperand.MainVariable.Type == "int")
-                    {
-                        MainVariable.Type = FirstOperand.MainVariable.Type; //если унарный, то тип совпадает с типом операнда
-                        return;
-                    }
-                    else throw new InvalidTypeException(LineNumber, FirstOperand.MainVariable.Type, Operator);
-                }
+                IsSemanticCorrect =FirstOperand.SemanticAnalysis();
             }
+            catch (SemanticException)
+            {
+                IsSemanticCorrect = false;
+            }
+
+            if (IsUnary)
+                if (IsSemanticCorrect)
+                {
+                    if (Value == "-")
+                        if (FirstOperand.MainVariable.Type == "int" || FirstOperand.MainVariable.Type == "float")
+                        {
+                            MainVariable.Type = FirstOperand.MainVariable.Type; //если унарный, то тип совпадает с типом операнда
+                            return true;
+                        }
+                        else throw new InvalidTypeException(LineNumber, FirstOperand.MainVariable.Type, Value);
+                    if (Value == "!")
+                    {
+                        if (FirstOperand.MainVariable.Type == "bool" || FirstOperand.MainVariable.Type == "int")
+                        {
+                            MainVariable.Type = FirstOperand.MainVariable.Type; //если унарный, то тип совпадает с типом операнда
+                            return true;
+                        }
+                        else throw new InvalidTypeException(LineNumber, FirstOperand.MainVariable.Type, Value);
+                    }
+                    return false;//просто чтоб компилятор не ругался, он сюда никогда не дойдёт
+                }
+                else
+                {
+                    return false;
+                }
             else
             {
-                SecondOperand.SetMainVariable(count);//дальше проверка совместимости типов и корректности операций
-                switch (TypeOfNode)
+                bool IsSecondOperandCorrect=SecondOperand.SemanticAnalysis();//дальше проверка совместимости типов и корректности операций
+                if (IsSecondOperandCorrect && IsSemanticCorrect)
                 {
-                    case NodeType.ArithmeticOperator:
-                        {
-                            if (Operator == "+" || Operator == "-")
-                                CheckTypesAdd();
-                            else CheckTypesMul();
-                            break;
-                        }
-                    case NodeType.ComparisonOperator:
-                        {
-                            CheckTypesComparison();
-                            break;
-                        }
-                    case NodeType.BitOperator:
-                        {
-                            CheckTypesBit();
-                            break;
-                        }
-                    case NodeType.LogicalOperator:
-                        {
-                            CheckTypesLogical();
-                            break;
-                        }
+                    switch (TypeOfNode)
+                    {
+                        case NodeType.ArithmeticOperator:
+                            {
+                                if (Value == "+" || Value == "-")
+                                    CheckTypesAdd();
+                                else CheckTypesMul();
+                                break;
+                            }
+                        case NodeType.ComparisonOperator:
+                            {
+                                CheckTypesComparison();
+                                break;
+                            }
+                        case NodeType.BitOperator:
+                            {
+                                CheckTypesBit();
+                                break;
+                            }
+                        case NodeType.LogicalOperator:
+                            {
+                                CheckTypesLogical();
+                                break;
+                            }
+                    }
+                    return true;
+                }
+                else
+                {
+                    IsSemanticCorrect = false;
+                    return false;
                 }
             }
         }
@@ -237,15 +244,28 @@ namespace C__DE.Models
 
     public partial class VariableDeclarationNode : AtomNode
     {
-        public override void SetMainVariable(Counters count)
+        public override bool SemanticAnalysis()
         {
             MainVariable = new Variable(); //создаём новую переменную и наделяем её новыми свойствами
-            MainVariable.Name = DeclaratedVariable.VariableName;
-            MainVariable.AlternativeName = "var_" + count.vars.ToString();
+            MainVariable.Name = DeclaratedVariable.Value;
+            MainVariable.AlternativeName = "var_" + Counters.vars.ToString();
             MainVariable.IsDeclared = true;
-            count.vars++;
+            MainVariable.Type = Type;
+            Counters.vars++;
+
+            //нужно посмотреть повторное объявление
+            Variable possibleVariable = parentBlock.BlockVariables.FirstOrDefault(var => var.Name == DeclaratedVariable.Value);
+            if (possibleVariable.Name != null)
+            {
+                IsSemanticCorrect = false;
+                throw new RedeclaringVariableException(LineNumber, DeclaratedVariable.Value);
+            }
+
             parentBlock.BlockVariables.Add(MainVariable); //помещаем в список переменных данного блока
-            DeclaratedVariable.SetMainVariable(count);
+            DeclaratedVariable.SemanticAnalysis();
+            IsSemanticCorrect = true;
+            return true;
+
         }
 
     }
@@ -267,13 +287,35 @@ namespace C__DE.Models
     public partial class AssignmentOperator : AtomNode
     {
 
-        public override void SetMainVariable(Counters count)
+        public override bool SemanticAnalysis()
         {
-            MainVariable = new Variable();
-            MainVariable.Name = AssignedVariable.MainVariable.Name;
-            MainVariable.AlternativeName = AssignedVariable.MainVariable.AlternativeName;
-            MainVariable.IsDeclared = AssignedVariable.MainVariable.IsDeclared;
-            MainVariable.Type = AssignedVariable.MainVariable.Type;
+            IsSemanticCorrect = true;
+            try
+            {
+                AssignedVariable.SemanticAnalysis();
+            }
+            catch(SemanticException)
+            {
+                IsSemanticCorrect = false;
+            }
+
+            try
+            {
+                RightPart.SemanticAnalysis();
+            }
+            catch (SemanticException)
+            {
+                IsSemanticCorrect = false;
+            }
+
+            switch(AssignmentOperation)
+            {
+                case "=":
+                    {
+                        if ()
+                        break;
+                    }
+            }
         }
     }
 

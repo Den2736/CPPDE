@@ -87,19 +87,23 @@ namespace CPPDE
             //получаем текущую лексему
             public static Lexeme GetLexeme()
             {
-                return LexemsForSyntaxAnalysis[LexemesIterator];
+                    return LexemsForSyntaxAnalysis[LexemesIterator];
             }
 
             //получить конкретную лексему
             public static void GetConcreteLexeme(string lex)
             {
-                Lexeme cur = GetLexeme();
-                if (cur.Value == lex)
+                if (LexemesIterator < LexemsForSyntaxAnalysis.Count)
                 {
-                    LexemesIterator++;
+                    Lexeme cur = GetLexeme();
+                    if (cur.Value == lex)
+                    {
+                        LexemesIterator++;
+                    }
+                    else
+                        throw new ExpectedAnotherSymbolException(lex, cur.Line, cur.Value);
                 }
-                else
-                    throw new ExpectedAnotherSymbolException(lex, cur.Line, cur.Value);
+                else throw new ExpectedAnotherSymbolException(lex, LexemsForSyntaxAnalysis.Last().Line, "end of file");
             }
 
 
@@ -133,6 +137,8 @@ namespace CPPDE
                 int brackets = 0;
                 while (true)
                 {
+                    if (LexemesIterator >= LexemsForSyntaxAnalysis.Count)
+                        throw new UnexpectedEOFException();
                     CurrentLexeme = GetLexeme().Value;
                     if (ReservedWords.Contains(CurrentLexeme) || !(CanBeTogether(LastLexeme, CurrentLexeme)))
                         throw new UnexpectedTokenException(GetLexeme().Line, GetLexeme().Value);
@@ -307,7 +313,7 @@ namespace CPPDE
             }
 
             //разбор оператора присваивания
-            public static void ParseAssignmentOperator()
+            public static AssignmentOperator ParseAssignmentOperator()
             {
                 Lexeme CurrentLexeme=GetLexeme();
                 if ((Types.Contains(CurrentLexeme.Value)) || (ReservedWords.Contains(CurrentLexeme.Value)) || !char.IsLetter(CurrentLexeme.Value[0]))
@@ -321,23 +327,25 @@ namespace CPPDE
                 try
                 {
                     AtomNode Expression = ParseExpression();
-                    NodesStack.Peek().AddOperator(new AssignmentOperator(AssignedVariable,Expression,CurrentLexeme.Value, AssignedVariable.LineNumber));
-                    return;
+                    //NodesStack.Peek().AddOperator(new AssignmentOperator(AssignedVariable,Expression,CurrentLexeme.Value, AssignedVariable.LineNumber));
+                    return new AssignmentOperator(AssignedVariable, Expression, CurrentLexeme.Value, AssignedVariable.LineNumber);
                 }
                 catch(SyntaxException)
                 {
                     while (!(GetLexeme().Value == ";" || GetLexeme().Value == ","  || LexemesIterator < LexemsForSyntaxAnalysis.Count))
                         ++LexemesIterator;
-                    //идём до точки с запятой и возвращаем null
-                    return;
+                    return null;
                 }
             }
 
             //разбор оператора объявления переменной
             public static void ParseDeclaration()
             {
+                //тут исключение не кидаем, поскольку вызов осуществляется ТОЛЬКО если была обнаружена метка типа
                 string varType = GetLexeme().Value; //получили тип
                 LexemesIterator++;
+                if (LexemesIterator >= LexemsForSyntaxAnalysis.Count)
+                    throw new UnexpectedEOFException();
                 Lexeme CurrentLexeme;
                 while (true)
                 {
@@ -350,12 +358,13 @@ namespace CPPDE
                         VariableNode DecVar = new VariableNode(CurrentLexeme.Value, CurrentLexeme.Line);
                         NodesStack.Peek().AddOperator(new VariableDeclarationNode(DecVar, varType, CurrentLexeme.Line));
                         LexemesIterator++;
-                        if (GetLexeme().Value == "=")
+                        if (Operations.AssignmentOperations.Contains(GetLexeme().Value))
                         {
                             LexemesIterator--;
                             try
                             {
-                                ParseAssignmentOperator();
+                                AssignmentOperator oper = ParseAssignmentOperator();
+                                NodesStack.Peek().AddOperator(oper);
                             }
                             catch (SyntaxException)
                             {
@@ -374,6 +383,54 @@ namespace CPPDE
                         else throw new UnexpectedTokenException(CurrentLexeme.Line, CurrentLexeme.Value);
                     }
                 }
+            }
+
+            //взять один оператор
+            public static List<AtomNode> GetSingleOperator()//начальное действие (только для цикла for)
+            {
+                List<AtomNode> OperationList = new List<AtomNode>();
+                Lexeme CurrentLexeme = GetLexeme();
+                if (GetLexeme().Value == ";")//начального действия нет
+                    return OperationList;
+
+                else if (Types.Contains(CurrentLexeme.Value)) //если есть объявление типа
+                {
+                    string VarType = CurrentLexeme.Value;
+                    LexemesIterator++;
+                    CurrentLexeme = GetLexeme();
+                    //должен быть идентификатор
+                    if (!char.IsLetter(CurrentLexeme.Value[0]) || ReservedWords.Contains(CurrentLexeme.Value) || Types.Contains(CurrentLexeme.Value))
+                        throw new UnexpectedTokenException(CurrentLexeme.Line, CurrentLexeme.Value);
+                    else //если всё хорошо
+                    {
+                        VariableNode DecVar = new VariableNode(CurrentLexeme.Value, CurrentLexeme.Line);
+                        OperationList.Add(new VariableDeclarationNode(DecVar, VarType, CurrentLexeme.Line));
+                    }
+                }
+                //указатель стоит на первой переменной(или константе)
+                LexemesIterator++;
+                if (Operations.AssignmentOperations.Contains(GetLexeme().Value))
+                {
+                    LexemesIterator--;//вернули на переменную
+                    AssignmentOperator AssignOper = ParseAssignmentOperator();
+                    OperationList.Add(AssignOper);
+                }
+                else
+                {
+                    LexemesIterator--;
+                    try
+                    {
+                        AtomNode Expression = ParseExpression();
+                        OperationList.Add(Expression);
+                    }
+                    catch (SyntaxException)
+                    {
+                        while (!(GetLexeme().Value == ";"))
+                            ++LexemesIterator;
+                    }
+
+                }
+                return OperationList;
             }
 
             //разбор условного оператора
@@ -453,6 +510,7 @@ namespace CPPDE
                 NodesStack.Peek().AddOperator(NewCycle);
             }
 
+            //разбор цикла с постусловием
             public static void ParsePostConditionCycle()
             {
                 int numline = LexemesIterator;
@@ -481,6 +539,47 @@ namespace CPPDE
                 NodesStack.Peek().AddOperator(NewCycle);
             }
 
+            //разбор цикла for
+            public static void ParseForCycle()
+            {
+                GetConcreteLexeme("for");
+                GetConcreteLexeme("(");
+                List<AtomNode> BeginAction = GetSingleOperator();
+                GetConcreteLexeme(";");
+                AtomNode Expression = ParseExpression();
+                GetConcreteLexeme(";");
+                AssignmentOperator PostAction = ParseAssignmentOperator();
+                GetConcreteLexeme(")");
+
+                CycleOperator NewCycle = new CycleOperator(BeginAction, Expression, PostAction, GetLexeme().Line);
+                NodesStack.Push(NewCycle);
+
+                Lexeme CurrentLexeme = GetLexeme();
+                if (CurrentLexeme.Value != "{")//то там один оператор
+                    GetNextOperator();
+                else
+                {
+                    while (CurrentLexeme.Value != "}" && LexemesIterator < LexemsForSyntaxAnalysis.Count)
+                        GetNextOperator();
+                    GetConcreteLexeme("}");
+                }
+                NodesStack.Pop();
+                NodesStack.Peek().AddOperator(NewCycle);
+            }
+
+            //разбор оператора чтения
+            public static void ParseReadOperator()
+            {
+
+            }
+
+            //разбор оператора записи
+            public static void ParseWriteOperator()
+            {
+
+            }
+
+            //получение следующего оператора
             public static void GetNextOperator()
             {
                 Lexeme CurrentLexeme = GetLexeme();
@@ -490,6 +589,14 @@ namespace CPPDE
                         ParseDeclaration();
                     else if (CurrentLexeme.Value == "if")
                         ParseConditionOperator();
+                    else if (CurrentLexeme.Value == "while")
+                        ParsePredConditionCycleOPerator();
+                    else if (CurrentLexeme.Value == "do")
+                        ParsePostConditionCycle();
+                    else if (CurrentLexeme.Value == "for")
+                        ParseForCycle();
+                    //else if (CurrentLexeme.Value == "")
+
                 }
                 catch (SyntaxException)
                 {
