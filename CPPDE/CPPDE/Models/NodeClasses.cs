@@ -23,7 +23,7 @@ namespace C__DE.Models
         public static List<string> ArithmeticOperations = new List<string> { "+", "-", "*", "/", "%" };
         public static List<string> BitOperations = new List<string> { "&", "|", "^" };
         public static List<string> ComparationOperations = new List<string> { "==", "!=", ">", "<", "<=", ">=" };
-        public static List<string> AssignmentOperations = new List<string> { "=", "+=", "-=", "*=", "/=", "%="};
+        public static List<string> AssignmentOperations = new List<string> { "=", "+=", "-=", "*=", "/=", "%=", "&&=", "||+"};
     }
 
     public enum NodeType
@@ -299,11 +299,9 @@ namespace C__DE.Models
     //С чтением и записью хз как, пока строка будет
     public partial class ReadOperator: AtomNode
     {
-        public string Source;
         public VariableNode ReadVariable;
-        public ReadOperator(string File, VariableNode ReadVar, int numLine)
+        public ReadOperator(VariableNode ReadVar, int numLine)
         {
-            Source = File;
             ReadVariable = ReadVar;
             TypeOfNode = NodeType.ReadNode;
             LineNumber = numLine;
@@ -317,11 +315,9 @@ namespace C__DE.Models
 
     public partial class WriteOperator : AtomNode
     {
-        public string Source;
-        public VariableNode WriteVariable;
-        public WriteOperator(string File, VariableNode WriteVar, int numLine)
+        public AtomNode WriteVariable;
+        public WriteOperator( AtomNode WriteVar, int numLine)
         {
-            Source = File;
             WriteVariable = WriteVar;
             TypeOfNode = NodeType.WriteNode;
             LineNumber = numLine;

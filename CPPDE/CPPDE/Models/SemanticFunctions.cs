@@ -82,6 +82,8 @@ namespace C__DE.Models
                     }
                 case "string":
                     {
+                        if (Value == "-")
+                            throw new InvalidTypeException(LineNumber, "string", "-");
                         switch (SecondOperand.MainVariable.Type)
                         {
                             case "string": { MainVariable.Type = "string"; break; }
@@ -92,6 +94,8 @@ namespace C__DE.Models
                     }
                 case "char":
                     {
+                        if (Value == "-")
+                            throw new InvalidTypeException(LineNumber, "string", "-");
                         switch (SecondOperand.MainVariable.Type)
                         {
                             case "string": { MainVariable.Type = "string"; break; }
@@ -286,6 +290,152 @@ namespace C__DE.Models
 
     public partial class AssignmentOperator : AtomNode
     {
+        public void CheckTypesAssign()
+        {
+            switch (AssignedVariable.MainVariable.Type)
+            {
+                case "int":
+                    {
+                        if (RightPart.MainVariable.Type == "int")
+                        {
+                            MainVariable.Type = "int";
+                            break;
+                        }
+                        else
+                        {
+                            throw new IncompatibleTypesException(LineNumber, "int", RightPart.MainVariable.Type);
+                        }
+
+                    }
+                case "float":
+                    {
+                        if(RightPart.MainVariable.Type == "int" || RightPart.MainVariable.Type == "float")
+                        {
+                            MainVariable.Type = "float";
+                            break;
+                        }
+                        else
+                        {
+                            throw new IncompatibleTypesException(LineNumber, "float", RightPart.MainVariable.Type);
+                        }
+                    }
+                case "string":
+                    {
+                        if (RightPart.MainVariable.Type == "string" || RightPart.MainVariable.Type == "char")
+                        {
+                            MainVariable.Type = "string";
+                            break;
+                        }
+                        else
+                            throw new IncompatibleTypesException(LineNumber, "string", RightPart.MainVariable.Type);
+                    }
+                default:
+                    {
+                        if (AssignedVariable.MainVariable.Type==RightPart.MainVariable.Type)
+                        {
+                            MainVariable.Type = AssignedVariable.MainVariable.Type;
+                            break;
+                        }
+                        else
+                            throw new InvalidTypeException(LineNumber, AssignedVariable.MainVariable.Type, AssignmentOperation);
+                    }
+            }
+        }
+        public void CheckTypesAdd()
+        {
+            switch (AssignedVariable.MainVariable.Type)
+            {
+                case "int":
+                    {
+                        if (RightPart.MainVariable.Type == "int")
+                        {
+                            MainVariable.Type = "int";
+                            break;
+                        }
+                        else
+                        {
+                            throw new IncompatibleTypesException(LineNumber, "int", RightPart.MainVariable.Type);
+                        }
+
+                    }
+                case "float":
+                    {
+                        if (RightPart.MainVariable.Type == "int" || RightPart.MainVariable.Type == "float")
+                        {
+                            MainVariable.Type = "float";
+                            break;
+                        }
+                        else
+                        {
+                            throw new IncompatibleTypesException(LineNumber, "float", RightPart.MainVariable.Type);
+                        }
+                    }
+                case "string":
+                    {
+                        if (RightPart.MainVariable.Type == "string" || RightPart.MainVariable.Type == "char")
+                        {
+                            MainVariable.Type = "string";
+                            break;
+                        }
+                        else
+                            throw new IncompatibleTypesException(LineNumber, "string", RightPart.MainVariable.Type);
+                    }
+                default:
+                    {
+                        throw new InvalidTypeException(LineNumber, AssignedVariable.MainVariable.Type, AssignmentOperation);
+                    }
+            }
+        }
+
+        public void CheckTypesArithmetic()
+        {
+            switch (AssignedVariable.MainVariable.Type)
+            {
+                case "int":
+                    {
+                        if (RightPart.MainVariable.Type == "int")
+                        {
+                            MainVariable.Type = "int";
+                            break;
+                        }
+                        else
+                        {
+                            throw new IncompatibleTypesException(LineNumber, "int", RightPart.MainVariable.Type);
+                        }
+                    }
+                case "float":
+                    {
+                        if (RightPart.MainVariable.Type == "int" || RightPart.MainVariable.Type == "float")
+                        {
+                            MainVariable.Type = "float";
+                            break;
+                        }
+                        else
+                        {
+                            throw new IncompatibleTypesException(LineNumber, "float", RightPart.MainVariable.Type);
+                        }
+                    }
+                default:
+                    {
+                        throw new InvalidTypeException(LineNumber, AssignedVariable.MainVariable.Type, AssignmentOperation);
+                    }
+            }
+        }
+
+        public void ChechTypesLogical()
+        {
+            if (AssignedVariable.MainVariable.Type == "bool")
+                if (RightPart.MainVariable.Type == "bool")
+                {
+                    MainVariable.Type = "bool";
+                }
+                else
+                {
+                    throw new InvalidTypeException(LineNumber, "bool", RightPart.MainVariable.Type);
+                }
+            throw new InvalidTypeException(LineNumber, AssignedVariable.MainVariable.Type, AssignmentOperation);
+        }
+
 
         public override bool SemanticAnalysis()
         {
@@ -308,14 +458,49 @@ namespace C__DE.Models
                 IsSemanticCorrect = false;
             }
 
-            switch(AssignmentOperation)
-            {
-                case "=":
+            if (IsSemanticCorrect)
+                try
+                {
+                    switch (AssignmentOperation)
                     {
-                        if ()
-                        break;
+                        case "=":
+                            {
+                                CheckTypesAssign();
+                                break;
+                            }
+                        case "+=":
+                            {
+                                CheckTypesAdd();
+                                break;
+                            }
+                        case "-=":
+                        case "*=":
+                        case "/=":
+                        case "%=":
+                            {
+                                CheckTypesArithmetic();
+                                break;
+                            }
+                        case "&&=":
+                        case "||=":
+                            {
+                                ChechTypesLogical();
+                                break;
+                            }
+                        default:
+                            {
+                                return false;
+                            }
                     }
-            }
+                    return true; //если всё хорошо, то true
+                }
+                catch (SemanticException)
+                {
+                    IsSemanticCorrect = false;
+                    return false;
+                }
+            else
+                return false;
         }
     }
 

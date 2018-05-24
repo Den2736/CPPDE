@@ -33,7 +33,7 @@ namespace CPPDE
             public static int LexemesIterator = 0;
 
             //список служебных слов
-            public static List<string> ReservedWords = new List<string> { "if", "while", "do", "else" };
+            public static List<string> ReservedWords = new List<string> { "if", "while", "do", "else" ,"scan", "print"};
 
             //приоритеты различных операций
             public static Dictionary<string, int> OperationPriorities = new Dictionary<string, int>();
@@ -121,6 +121,22 @@ namespace CPPDE
                 return false;
             }
 
+            //идём до следующего элемента (для выражения или присваивания)
+            public static void GoNext(int brackets)
+            {
+                //если лексемы закончились
+                if (LexemesIterator >= LexemsForSyntaxAnalysis.Count)
+                    throw new UnexpectedEOFException();
+                if (GetLexeme().Value == ";" || GetLexeme().Value == ",")
+                    return;
+                if (GetLexeme().Value == ")")
+                    if (brackets == 0)
+                        return;
+                    else brackets--;
+                if (GetLexeme().Value == "(")
+                    brackets++;
+            }
+
             //разбор выражения (арифметического, логического)
             public static AtomNode ParseExpression()
             {
@@ -131,7 +147,9 @@ namespace CPPDE
                 Stack<KeyValuePair<string,int>> OperationStack = new Stack<KeyValuePair<string, int>>();
 
                 //предыдущая и текущая лексемы
-                string LastLexeme="", CurrentLexeme;
+                Lexeme LastLexeme=new Lexeme(), CurrentLexeme=GetLexeme();
+                LastLexeme.Value="";
+                LastLexeme.Line = 0;
 
                 //счётчик скобочек
                 int brackets = 0;
@@ -139,65 +157,68 @@ namespace CPPDE
                 {
                     if (LexemesIterator >= LexemsForSyntaxAnalysis.Count)
                         throw new UnexpectedEOFException();
-                    CurrentLexeme = GetLexeme().Value;
-                    if (ReservedWords.Contains(CurrentLexeme) || !(CanBeTogether(LastLexeme, CurrentLexeme)))
-                        throw new UnexpectedTokenException(GetLexeme().Line, GetLexeme().Value);
+                    CurrentLexeme = GetLexeme();
+                    if (ReservedWords.Contains(CurrentLexeme.Value) || !(CanBeTogether(LastLexeme.Value, CurrentLexeme.Value)))
+                    {
+                        GoNext(brackets);
+                        throw new UnexpectedTokenException(CurrentLexeme.Line, CurrentLexeme.Value);
+                    }
 
 
                     else //если всё хорошо
                     {
-                        if (char.IsDigit(CurrentLexeme[0])) //То это числовая константа
+                        if (char.IsDigit(CurrentLexeme.Value[0])) //То это числовая константа
                         {
-                            if (CurrentLexeme.Contains("."))
+                            if (CurrentLexeme.Value.Contains("."))
                             {
-                                ConstantNode NewConstant = new ConstantNode("float", CurrentLexeme, GetLexeme().Line);
+                                ConstantNode NewConstant = new ConstantNode("float", CurrentLexeme.Value, CurrentLexeme.Line);
                                 ResultStack.Push(NewConstant);
                             }
                             else
                             {
-                                ConstantNode NewConstant = new ConstantNode("int", CurrentLexeme, GetLexeme().Line);
+                                ConstantNode NewConstant = new ConstantNode("int", CurrentLexeme.Value, CurrentLexeme.Line);
                                 ResultStack.Push(NewConstant);
                             }
                         }
 
-                        else if (CurrentLexeme[0]=='\'') //это символ
+                        else if (CurrentLexeme.Value[0]=='\'') //это символ
                         {
-                            ConstantNode NewConstant = new ConstantNode("char", CurrentLexeme, GetLexeme().Line);
+                            ConstantNode NewConstant = new ConstantNode("char", CurrentLexeme.Value, CurrentLexeme.Line);
                             ResultStack.Push(NewConstant);
                         }
 
-                        else if (CurrentLexeme[0]=='\"') //это строка
+                        else if (CurrentLexeme.Value[0]=='\"') //это строка
                         {
-                            ConstantNode NewConstant = new ConstantNode("string", CurrentLexeme, GetLexeme().Line);
+                            ConstantNode NewConstant = new ConstantNode("string", CurrentLexeme.Value, CurrentLexeme.Line);
                             ResultStack.Push(NewConstant);
                         }
 
-                        else if (CurrentLexeme=="true" || CurrentLexeme=="false")//логическая константа
+                        else if (CurrentLexeme.Value == "true" || CurrentLexeme.Value == "false")//логическая константа
                         {
-                            ConstantNode NewConstant = new ConstantNode("bool", CurrentLexeme, GetLexeme().Line);
+                            ConstantNode NewConstant = new ConstantNode("bool", CurrentLexeme.Value, CurrentLexeme.Line);
                             ResultStack.Push(NewConstant);
                         }
 
-                        else if (char.IsLetter(CurrentLexeme[0])) //переменная
+                        else if (char.IsLetter(CurrentLexeme.Value[0])) //переменная
                         {
-                            VariableNode NewVariable = new VariableNode(CurrentLexeme, GetLexeme().Line);
+                            VariableNode NewVariable = new VariableNode(CurrentLexeme.Value, CurrentLexeme.Line);
                             ResultStack.Push(NewVariable);
                         }
 
-                        else if (CurrentLexeme=="(")
+                        else if (CurrentLexeme.Value == "(")
                         {
-                            OperationStack.Push(new KeyValuePair<string, int>("(",GetLexeme().Line));
+                            OperationStack.Push(new KeyValuePair<string, int>("(", CurrentLexeme.Line));
                             ++brackets;
                         }
 
-                        else if (CurrentLexeme==")")
+                        else if (CurrentLexeme.Value == ")")
                         {
                             
                             while ((OperationStack.Peek().Key != "(" && brackets!=0) || //разгрести до открывающей скобки
                                     ((OperationStack.Count!=0) && brackets==0)) //или до конца
                                 {
                                     if (OperationStack.Count == 0)//если стек пустой, то нет соответствующей скобки
-                                        throw new UnmatchedBracketExpression(GetLexeme().Line, ")");
+                                        throw new UnmatchedBracketExpression(CurrentLexeme.Line, ")");
                                     //извлекаем верхнюю операцию
                                     var operation = OperationStack.Pop();
 
@@ -229,12 +250,12 @@ namespace CPPDE
                                 return ResultStack.Pop(); //иначе всё
                         }
 
-                        else if (OperationPriorities.Keys.Contains(CurrentLexeme)) //если операция
+                        else if (OperationPriorities.Keys.Contains(CurrentLexeme.Value)) //если операция
                         {
-                            if (CurrentLexeme == "-" && (LastLexeme == "" || LastLexeme == "("))
+                            if (CurrentLexeme.Value == "-" && (LastLexeme.Value == "" || LastLexeme.Value == "("))
                                 OperationStack.Push(new KeyValuePair<string, int>("_", GetLexeme().Line));
-                            else if (CurrentLexeme == "!" || OperationStack.Count == 0)
-                                OperationStack.Push(new KeyValuePair<string, int>(CurrentLexeme, GetLexeme().Line));
+                            else if (CurrentLexeme.Value == "!" || OperationStack.Count == 0)
+                                OperationStack.Push(new KeyValuePair<string, int>(CurrentLexeme.Value, GetLexeme().Line));
                             else
                             {
                                 {
@@ -261,16 +282,16 @@ namespace CPPDE
                                         }
                                         ResultStack.Push(NewNode);
                                     }
-                                    OperationStack.Push(new KeyValuePair<string, int> (CurrentLexeme, GetLexeme().Line));
+                                    OperationStack.Push(new KeyValuePair<string, int> (CurrentLexeme.Value, GetLexeme().Line));
                                 }
                             }
 
                         }
 
-                        else if (CurrentLexeme=="," || CurrentLexeme==";")//если выражение оконченор
+                        else if (CurrentLexeme.Value == "," || CurrentLexeme.Value == ";")//если выражение окончено
                         {
                             //если всё хорошо
-                            if (LastLexeme == ")" || char.IsLetterOrDigit(LastLexeme[0]) || LastLexeme[0] == '\'' || LastLexeme[0] == '\"')
+                            if (LastLexeme.Value == ")" || char.IsLetterOrDigit(LastLexeme.Value[0]) || LastLexeme.Value[0] == '\'' || LastLexeme.Value[0] == '\"')
                             {
                                 while (OperationStack.Count > 0)
                                 {
@@ -299,11 +320,17 @@ namespace CPPDE
                                 return ResultStack.Pop();
                             }
                             else
-                                throw new UnexpectedTokenException(GetLexeme().Line, CurrentLexeme);
+                            {
+                                GoNext(brackets);
+                                throw new UnexpectedTokenException(CurrentLexeme.Line, CurrentLexeme.Value);
+                            }
                         }
 
                         else //если что-то другое, то ошибка
-                            throw new UnexpectedTokenException(GetLexeme().Line, CurrentLexeme);
+                        {
+                            GoNext(brackets);
+                            throw new UnexpectedTokenException(CurrentLexeme.Line, CurrentLexeme.Value);
+                        }
 
                         //переход к следующей лексеме
                         LexemesIterator++;
@@ -317,12 +344,18 @@ namespace CPPDE
             {
                 Lexeme CurrentLexeme=GetLexeme();
                 if ((Types.Contains(CurrentLexeme.Value)) || (ReservedWords.Contains(CurrentLexeme.Value)) || !char.IsLetter(CurrentLexeme.Value[0]))
+                {
+                    GoNext(0);
                     throw new UnexpectedTokenException(CurrentLexeme.Line, CurrentLexeme.Value);
+                }
                 VariableNode AssignedVariable = new VariableNode(CurrentLexeme.Value, CurrentLexeme.Line);
                 LexemesIterator++;
                 CurrentLexeme = GetLexeme();
                 if (!Operations.AssignmentOperations.Contains(CurrentLexeme.Value))
+                {
+                    //вообще тут исключения быть не должно, поскольку функция вызывается только когда известно, что стоит нужный символ
                     throw new UnexpectedTokenException(CurrentLexeme.Line, CurrentLexeme.Value);
+                }
                 LexemesIterator++;
                 try
                 {
@@ -332,8 +365,7 @@ namespace CPPDE
                 }
                 catch(SyntaxException)
                 {
-                    while (!(GetLexeme().Value == ";" || GetLexeme().Value == ","  || LexemesIterator < LexemsForSyntaxAnalysis.Count))
-                        ++LexemesIterator;
+                    GoNext(0);
                     return null;
                 }
             }
@@ -352,7 +384,16 @@ namespace CPPDE
                     CurrentLexeme = GetLexeme();
                     //должен быть идентификатор
                     if (!char.IsLetter(CurrentLexeme.Value[0]) || ReservedWords.Contains(CurrentLexeme.Value) || Types.Contains(CurrentLexeme.Value))
-                        throw new UnexpectedTokenException(CurrentLexeme.Line, CurrentLexeme.Value);
+                    {
+                        int Line = CurrentLexeme.Line;
+                        string Value = CurrentLexeme.Value;
+                        while (CurrentLexeme.Value!=";")
+                        {
+                            GoNext(0);
+                            CurrentLexeme = GetLexeme();
+                        }
+                        throw new UnexpectedTokenException(Line, Value);//плохо, идём до точки с запятой и кидаем исключение
+                    }
                     else //если всё хорошо
                     {
                         VariableNode DecVar = new VariableNode(CurrentLexeme.Value, CurrentLexeme.Line);
@@ -370,17 +411,36 @@ namespace CPPDE
                             {
                                 if (LexemesIterator == LexemsForSyntaxAnalysis.Count)
                                     throw new UnexpectedEOFException();
+                                int Line = CurrentLexeme.Line;
+                                string Value = CurrentLexeme.Value;
+                                while (CurrentLexeme.Value != ";" || CurrentLexeme.Value != ",")
+                                {
+                                    GoNext(0);
+                                    CurrentLexeme = GetLexeme();
+                                }
                             }
                         }
                         CurrentLexeme = GetLexeme();
-                        if (CurrentLexeme.Value == ",")
+
+                        //тут исключений не будет, потому что оно 100% равно, другого символа тут не будет
+                        if (CurrentLexeme.Value == ",") 
                             GetConcreteLexeme(",");
                         else if (CurrentLexeme.Value == ";")
                         {
                             GetConcreteLexeme(";");
                             return;
                         }
-                        else throw new UnexpectedTokenException(CurrentLexeme.Line, CurrentLexeme.Value);
+                        else
+                        {
+                            int Line = CurrentLexeme.Line;
+                            string Value = CurrentLexeme.Value;
+                            while (CurrentLexeme.Value != ";")
+                            {
+                                GoNext(0);
+                                CurrentLexeme = GetLexeme();
+                            }
+                            throw new UnexpectedTokenException(Line, Value);//плохо, идём до точки с запятой и кидаем исключение
+                        }
                     }
                 }
             }
@@ -390,7 +450,7 @@ namespace CPPDE
             {
                 List<AtomNode> OperationList = new List<AtomNode>();
                 Lexeme CurrentLexeme = GetLexeme();
-                if (GetLexeme().Value == ";")//начального действия нет
+                if (CurrentLexeme.Value == ";")//начального действия нет
                     return OperationList;
 
                 else if (Types.Contains(CurrentLexeme.Value)) //если есть объявление типа
@@ -400,7 +460,16 @@ namespace CPPDE
                     CurrentLexeme = GetLexeme();
                     //должен быть идентификатор
                     if (!char.IsLetter(CurrentLexeme.Value[0]) || ReservedWords.Contains(CurrentLexeme.Value) || Types.Contains(CurrentLexeme.Value))
-                        throw new UnexpectedTokenException(CurrentLexeme.Line, CurrentLexeme.Value);
+                    {
+                        int Line = CurrentLexeme.Line;
+                        string Value = CurrentLexeme.Value;
+                        while (CurrentLexeme.Value != ";")
+                        {
+                            GoNext(0);
+                            CurrentLexeme = GetLexeme();
+                        }
+                        throw new UnexpectedTokenException(Line, Value);//плохо, идём до точки с запятой и кидаем исключение
+                    }
                     else //если всё хорошо
                     {
                         VariableNode DecVar = new VariableNode(CurrentLexeme.Value, CurrentLexeme.Line);
@@ -570,13 +639,49 @@ namespace CPPDE
             //разбор оператора чтения
             public static void ParseReadOperator()
             {
+                GetConcreteLexeme("scan");
+                GetConcreteLexeme("(");
+                Lexeme CurrentLexeme = GetLexeme();
+                if (ReservedWords.Contains(CurrentLexeme.Value) || !char.IsLetter(CurrentLexeme.Value[0]) || Types.Contains(CurrentLexeme.Value))
+                    throw new UnexpectedTokenException(CurrentLexeme.Line, CurrentLexeme.Value);
+                VariableNode ReadVar = new VariableNode(CurrentLexeme.Value, CurrentLexeme.Line);
+                NodesStack.Peek().AddOperator(new ReadOperator(ReadVar, CurrentLexeme.Line));
 
+                LexemesIterator++;
+                CurrentLexeme = GetLexeme();
+                while (CurrentLexeme.Value != ")")
+                {
+                    GetConcreteLexeme(",");
+                    CurrentLexeme = GetLexeme();
+                    if (ReservedWords.Contains(CurrentLexeme.Value) || !char.IsLetter(CurrentLexeme.Value[0]) || Types.Contains(CurrentLexeme.Value))
+                        throw new UnexpectedTokenException(CurrentLexeme.Line, CurrentLexeme.Value);
+                    ReadVar = new VariableNode(CurrentLexeme.Value, CurrentLexeme.Line);
+                    NodesStack.Peek().AddOperator(new ReadOperator(ReadVar, CurrentLexeme.Line));
+                    LexemesIterator++;
+                    CurrentLexeme = GetLexeme();
+                }
+                GetConcreteLexeme(")");
             }
 
             //разбор оператора записи
             public static void ParseWriteOperator()
             {
-
+                GetConcreteLexeme("print");
+                GetConcreteLexeme("(");
+                Lexeme CurrentLexeme = GetLexeme();
+                AtomNode Exp = ParseExpression();
+                NodesStack.Peek().AddOperator(new WriteOperator(Exp, CurrentLexeme.Line));
+                LexemesIterator++;
+                CurrentLexeme = GetLexeme();
+                while (CurrentLexeme.Value!=")")
+                {
+                    GetConcreteLexeme(",");
+                    Exp = ParseExpression();
+                    NodesStack.Peek().AddOperator(new WriteOperator(Exp, CurrentLexeme.Line));
+                    LexemesIterator++;
+                    CurrentLexeme = GetLexeme();
+                }
+                GetConcreteLexeme(")");
             }
 
             //получение следующего оператора
@@ -595,8 +700,27 @@ namespace CPPDE
                         ParsePostConditionCycle();
                     else if (CurrentLexeme.Value == "for")
                         ParseForCycle();
-                    //else if (CurrentLexeme.Value == "")
-
+                    else if (CurrentLexeme.Value == "scan")
+                        ParseReadOperator();
+                    else if (CurrentLexeme.Value == "print")
+                        ParseWriteOperator();
+                    else if (Types.Contains(CurrentLexeme.Value))
+                        ParseDeclaration();
+                    else if (CurrentLexeme.Value==";")//пустой оператор
+                    {
+                        GetConcreteLexeme(";");
+                    }
+                    else if (LexemesIterator+1<LexemsForSyntaxAnalysis.Count && Operations.AssignmentOperations.Contains(LexemsForSyntaxAnalysis[LexemesIterator + 1].Value))
+                    {
+                        AssignmentOperator AssignOp = ParseAssignmentOperator();
+                        NodesStack.Peek().AddOperator(AssignOp);
+                        GetConcreteLexeme(";");
+                    }
+                    else
+                    {
+                        AtomNode Exp = ParseExpression();
+                        NodesStack.Peek().AddOperator(Exp);
+                    }
                 }
                 catch (SyntaxException)
                 {
@@ -609,6 +733,9 @@ namespace CPPDE
                 MainRootNode root = new MainRootNode(LexemsForSyntaxAnalysis[0].Line);
                 LexemesIterator = 0;
                 NodesStack.Push(root);
+                while (LexemesIterator < LexemsForSyntaxAnalysis.Count)
+                    GetNextOperator();
+                //запомнить главный узел
             }
         }
     }
