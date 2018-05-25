@@ -259,7 +259,7 @@ namespace CPPDE
                             else
                             {
                                 {
-                                    while (OperationStack.Count > 0 && OperationPriorities[OperationStack.Peek().Key] >= OperationPriorities[CurrentLexeme])
+                                    while (OperationStack.Count > 0 && OperationPriorities[OperationStack.Peek().Key] >= OperationPriorities[CurrentLexeme.Value])
                                     {
                                         var operation = OperationStack.Pop();
 

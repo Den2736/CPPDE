@@ -20,8 +20,7 @@ namespace C__DE.Models
 
     public abstract partial class AtomNode : Node
     {
-        //public abstract void SetMainVariable();
-        //в зависимости от типа узла ссылка на переменную в таблице или на временную переменную
+
     }
 
     public partial class ConstantNode : AtomNode
@@ -171,9 +170,15 @@ namespace C__DE.Models
 
         public override bool SemanticAnalysis()
         {
+            //будем считать, что определено
+            MainVariable.WasIdentified = true;
+
             try
             {
+                FirstOperand.MainVariable.WasUsed = true;
                 IsSemanticCorrect =FirstOperand.SemanticAnalysis();
+                if (!FirstOperand.MainVariable.WasIdentified)
+                    throw new UnidentifiedVariableException(FirstOperand.LineNumber, FirstOperand.MainVariable.Name);
             }
             catch (SemanticException)
             {
@@ -207,35 +212,53 @@ namespace C__DE.Models
                 }
             else
             {
+                try
+                {
+                    SecondOperand.MainVariable.WasUsed = true;
+                    if (!SecondOperand.MainVariable.WasIdentified)
+                        throw new UnidentifiedVariableException(SecondOperand.LineNumber, SecondOperand.MainVariable.Name);
+                }
+                catch (SemanticException)
+                {
+
+                }
                 bool IsSecondOperandCorrect=SecondOperand.SemanticAnalysis();//дальше проверка совместимости типов и корректности операций
                 if (IsSecondOperandCorrect && IsSemanticCorrect)
                 {
-                    switch (TypeOfNode)
+                    try
                     {
-                        case NodeType.ArithmeticOperator:
-                            {
-                                if (Value == "+" || Value == "-")
-                                    CheckTypesAdd();
-                                else CheckTypesMul();
-                                break;
-                            }
-                        case NodeType.ComparisonOperator:
-                            {
-                                CheckTypesComparison();
-                                break;
-                            }
-                        case NodeType.BitOperator:
-                            {
-                                CheckTypesBit();
-                                break;
-                            }
-                        case NodeType.LogicalOperator:
-                            {
-                                CheckTypesLogical();
-                                break;
-                            }
+                        switch (TypeOfNode)
+                        {
+                            case NodeType.ArithmeticOperator:
+                                {
+                                    if (Value == "+" || Value == "-")
+                                        CheckTypesAdd();
+                                    else CheckTypesMul();
+                                    break;
+                                }
+                            case NodeType.ComparisonOperator:
+                                {
+                                    CheckTypesComparison();
+                                    break;
+                                }
+                            case NodeType.BitOperator:
+                                {
+                                    CheckTypesBit();
+                                    break;
+                                }
+                            case NodeType.LogicalOperator:
+                                {
+                                    CheckTypesLogical();
+                                    break;
+                                }
+                        }
+                        return true;
                     }
-                    return true;
+                    catch (SemanticException)
+                    {
+                        IsSemanticCorrect = false;
+                        return false;
+                    }
                 }
                 else
                 {
@@ -258,34 +281,144 @@ namespace C__DE.Models
             Counters.vars++;
 
             //нужно посмотреть повторное объявление
-            Variable possibleVariable = parentBlock.BlockVariables.FirstOrDefault(var => var.Name == DeclaratedVariable.Value);
-            if (possibleVariable.Name != null)
+            try
             {
-                IsSemanticCorrect = false;
-                throw new RedeclaringVariableException(LineNumber, DeclaratedVariable.Value);
+                Variable possibleVariable = parentBlock.BlockVariables.FirstOrDefault(var => var.Name == DeclaratedVariable.Value);
+                if (possibleVariable!= null)
+                {
+                    IsSemanticCorrect = false;
+                    possibleVariable.Type = Type; //меняем тип
+                    throw new RedeclaringVariableException(LineNumber, DeclaratedVariable.Value);
+                }
+                parentBlock.BlockVariables.Add(MainVariable); //помещаем в список переменных данного блока
+                IsSemanticCorrect = true;
             }
-
-            parentBlock.BlockVariables.Add(MainVariable); //помещаем в список переменных данного блока
+            catch (SemanticException)
+            {
+                IsSemanticCorrect = false; //плохо
+            }
             DeclaratedVariable.SemanticAnalysis();
-            IsSemanticCorrect = true;
-            return true;
-
+            return IsSemanticCorrect;
         }
 
     }
 
     public partial class ConditionalOperatorNode : BlockNode
     {
+        public override bool SemanticAnalysis()
+        {
+            IsSemanticCorrect = true;
+            try
+            {
+                IsSemanticCorrect &= Condition.SemanticAnalysis();
+            }
+            catch (SemanticException)
+            {
+                IsSemanticCorrect = false;
+            }
  
+            try
+            {
+                IsSemanticCorrect &= IfBranch.SemanticAnalysis();
+            }
+            catch
+            {
+                IsSemanticCorrect = false;
+            }
+
+            if (ElseBranch != null)
+            {
+                try
+                {
+                    IsSemanticCorrect = ElseBranch.SemanticAnalysis();
+                }
+                catch (SemanticException)
+                {
+                    IsSemanticCorrect = false;
+                }
+            }
+        return IsSemanticCorrect;
+        }
     }
 
     public partial class ConditionalBranchNode : BlockNode//какая-то из веток if или else
     {
+        public override bool SemanticAnalysis()
+        {
+            IsSemanticCorrect = true;
+            foreach (var oper in ChildrenOperators)
+            {
+                try
+                {
+                    IsSemanticCorrect &= oper.SemanticAnalysis();
+                }
+                catch (SemanticException)
+                {
+                    IsSemanticCorrect = false;
+                }
+            }
+            return IsSemanticCorrect;
+        }
     }
 
     public partial class CycleOperator : BlockNode
     {
-        
+        public override bool SemanticAnalysis()
+        {
+            IsSemanticCorrect = true;
+            if (BeginningActivity!=null)
+            {
+                foreach (var Act in BeginningActivity)
+                {
+                    try
+                    {
+                        IsSemanticCorrect &= Act.SemanticAnalysis();
+                    }
+                    catch (SemanticException)
+                    {
+                        IsSemanticCorrect = false;
+                    }
+                }
+            }
+
+            if (ContinueCondition!=null)
+            {
+                try
+                {
+                    IsSemanticCorrect &= ContinueCondition.SemanticAnalysis();
+                }
+                catch(SemanticException)
+                {
+                    IsSemanticCorrect = false;
+                }
+            }
+
+            if (IterationActivity!=null)
+            {
+                try
+                {
+                    IsSemanticCorrect &= IterationActivity.SemanticAnalysis();
+                }
+                catch (SemanticException)
+                {
+                    IsSemanticCorrect = false;
+                }
+            }
+
+            foreach(var oper in ChildrenOperators)
+            {
+                try
+                {
+                    IsSemanticCorrect &= oper.SemanticAnalysis();
+                }
+                catch (SemanticException)
+                {
+                    IsSemanticCorrect = false;
+                }
+            }
+
+            return IsSemanticCorrect;
+        }
     }
 
     public partial class AssignmentOperator : AtomNode
@@ -465,6 +598,7 @@ namespace C__DE.Models
                     {
                         case "=":
                             {
+                                MainVariable.WasIdentified = true;
                                 CheckTypesAssign();
                                 break;
                             }
@@ -506,30 +640,58 @@ namespace C__DE.Models
 
     public partial class MainRootNode : BlockNode
     {
+        public override bool SemanticAnalysis()
+        {
+            IsSemanticCorrect = true;
+            foreach (var oper in ChildrenOperators)
+            {
+                try
+                {
+                    IsSemanticCorrect &= oper.SemanticAnalysis();
+                }
+                catch (SemanticException)
+                {
+                    IsSemanticCorrect = false;
+                }
+            }
+            return IsSemanticCorrect;
+        }
     }
 
     //С чтением и записью хз как, пока строка будет
     public partial class ReadOperator : AtomNode
     {
-        public override void SetMainVariable(Counters count)
+        public override bool SemanticAnalysis()
         {
-            MainVariable = new Variable();
-            MainVariable.Name = ReadVariable.MainVariable.Name;
-            MainVariable.AlternativeName = ReadVariable.MainVariable.AlternativeName;
-            MainVariable.IsDeclared = ReadVariable.MainVariable.IsDeclared;
-            MainVariable.Type = ReadVariable.MainVariable.Type;
+            try
+            {
+                IsSemanticCorrect = ReadVariable.SemanticAnalysis();
+                ReadVariable.MainVariable.WasIdentified = true;
+            }
+            catch (SemanticException)
+            {
+                IsSemanticCorrect = false;
+            }
+            return IsSemanticCorrect;
         }
     }
 
     public partial class WriteOperator : AtomNode
     {
-        public override void SetMainVariable(Counters count)
+        public override bool SemanticAnalysis()
         {
-            MainVariable = new Variable();
-            MainVariable.Name = WriteVariable.MainVariable.Name;
-            MainVariable.AlternativeName = WriteVariable.MainVariable.AlternativeName;
-            MainVariable.IsDeclared = WriteVariable.MainVariable.IsDeclared;
-            MainVariable.Type = WriteVariable.MainVariable.Type;
+            try
+            {
+                WriteVariable.MainVariable.WasUsed = true;
+                IsSemanticCorrect = WriteVariable.SemanticAnalysis();
+                if (!WriteVariable.MainVariable.WasIdentified)
+                    throw new UnidentifiedVariableException(WriteVariable.LineNumber, WriteVariable.MainVariable.Name);
+            }
+            catch (SemanticException)
+            {
+                IsSemanticCorrect = false;
+            }
+            return IsSemanticCorrect;
         }
     }
 }
