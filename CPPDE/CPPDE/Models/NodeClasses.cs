@@ -293,6 +293,7 @@ namespace C__DE.Models
         {
             TypeOfNode = NodeType.RootNode;
             LineNumber = numLine;
+            ChildrenOperators = new List<Node>();
         }
     }
 

@@ -23,6 +23,8 @@ namespace CPPDE
         /// </summary>
         public static List<Variable> Variables { get; set; }
 
+        public static MainRootNode Root { get; set; }
+
         static void Main(string[] args)
         {
             // TODO get sourcePath from args
@@ -32,7 +34,9 @@ namespace CPPDE
                 Console.Write($"Paste path to the source file:{Environment.NewLine}");
                 string sourcePath = Console.ReadLine();
                 LexicalAnalyzer.Parse(sourcePath);
-                var a = 0;
+                //var a = 0;
+                SyntaxAnalyzer.Parse();
+                Console.WriteLine("Синтаксический анализ окончен");
             }
             catch (CompilerException e)
             {

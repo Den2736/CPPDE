@@ -8,6 +8,7 @@ using CPPDE.Models.Exceptions.LexicalExceptions;
 using C__DE.Models;
 using static CPPDE.Program;
 using C__DE.Models.Exceptions.SyntaxExceptions;
+using CPPDE.Models.Exceptions;
 
 namespace CPPDE
 {
@@ -106,6 +107,15 @@ namespace CPPDE
                 else throw new ExpectedAnotherSymbolException(lex, LexemsForSyntaxAnalysis.Last().Line, "end of file");
             }
 
+            //обработка исключения "Неожиданный конец файла" - все операторы "складываются"
+            public static void HandleEOFException()
+            {
+                while (NodesStack.Count!=1)
+                {
+                    BlockNode EmbeddedNode = NodesStack.Pop();
+                    NodesStack.Peek().AddOperator(EmbeddedNode);
+                }
+            }
 
             //проверяет, могут ли две лексемы идти друг за другом (только для выражений)
             public static bool CanBeTogether(string s1, string s2)
@@ -113,8 +123,8 @@ namespace CPPDE
                 if ((s1 == "" || s1 == "(") && (s2 == "-"))
                     return true;
                 if ((s1 == "" || s1 == "(" || OperationPriorities.Keys.Contains(s1) && s1 != ")") && 
-                    (char.IsLetterOrDigit(s2[0]) || s2=="!" || s2==")" || s2[0]=='\'' || s2[0]=='\"'))
-                    return false;
+                    (char.IsLetterOrDigit(s2[0]) || s2=="!"  || s2[0]=='\'' || s2[0]=='\"'))
+                    return true;
                 if ((char.IsLetterOrDigit(s1[0]) || s1 == ")" || s1[0] == '\'' || s1[0] == '\"') && 
                     (OperationPriorities.Keys.Contains(s2) && s2 != "!"))
                     return true;
@@ -158,12 +168,50 @@ namespace CPPDE
                     if (LexemesIterator >= LexemsForSyntaxAnalysis.Count)
                         throw new UnexpectedEOFException();
                     CurrentLexeme = GetLexeme();
+
+                    if (CurrentLexeme.Value == "," || CurrentLexeme.Value == ";")//если выражение окончено
+                    {
+                        //если всё хорошо
+                        if (LastLexeme.Value == ")" || char.IsLetterOrDigit(LastLexeme.Value[0]) || LastLexeme.Value[0] == '\'' || LastLexeme.Value[0] == '\"')
+                        {
+                            while (OperationStack.Count > 0)
+                            {
+                                //извлекаем верхнюю операцию
+                                var operation = OperationStack.Pop();
+
+                                //новый узел для операции
+                                BinaryOperatorNode NewNode;
+
+                                if (operation.Key == "!" || operation.Key == "_")//если унарная
+                                {
+                                    var Operand = ResultStack.Pop();
+                                    if (operation.Key == "_")
+                                        NewNode = new BinaryOperatorNode("-", Operand, operation.Value);
+                                    else
+                                        NewNode = new BinaryOperatorNode("!", Operand, operation.Value);
+                                }
+                                else
+                                {
+                                    var SecondOperand = ResultStack.Pop();
+                                    var FirstOperand = ResultStack.Pop();
+                                    NewNode = new BinaryOperatorNode(operation.Key, FirstOperand, operation.Value);
+                                }
+                                ResultStack.Push(NewNode);
+                            }
+                            return ResultStack.Pop();
+                        }
+                        else
+                        {
+                            GoNext(brackets);
+                            throw new UnexpectedTokenException(CurrentLexeme.Line, CurrentLexeme.Value);
+                        }
+                    }
+
                     if (ReservedWords.Contains(CurrentLexeme.Value) || !(CanBeTogether(LastLexeme.Value, CurrentLexeme.Value)))
                     {
                         GoNext(brackets);
                         throw new UnexpectedTokenException(CurrentLexeme.Line, CurrentLexeme.Value);
                     }
-
 
                     else //если всё хорошо
                     {
@@ -218,7 +266,9 @@ namespace CPPDE
                                     ((OperationStack.Count!=0) && brackets==0)) //или до конца
                                 {
                                     if (OperationStack.Count == 0)//если стек пустой, то нет соответствующей скобки
-                                        throw new UnmatchedBracketExpression(CurrentLexeme.Line, ")");
+                                    {
+                                        return ResultStack.Pop(); //может быть например в условном операторе, поэтому скобка может быть от него
+                                    }
                                     //извлекаем верхнюю операцию
                                     var operation = OperationStack.Pop();
 
@@ -288,44 +338,6 @@ namespace CPPDE
 
                         }
 
-                        else if (CurrentLexeme.Value == "," || CurrentLexeme.Value == ";")//если выражение окончено
-                        {
-                            //если всё хорошо
-                            if (LastLexeme.Value == ")" || char.IsLetterOrDigit(LastLexeme.Value[0]) || LastLexeme.Value[0] == '\'' || LastLexeme.Value[0] == '\"')
-                            {
-                                while (OperationStack.Count > 0)
-                                {
-                                    //извлекаем верхнюю операцию
-                                    var operation = OperationStack.Pop();
-
-                                    //новый узел для операции
-                                    BinaryOperatorNode NewNode;
-
-                                    if (operation.Key == "!" || operation.Key == "_")//если унарная
-                                    {
-                                        var Operand = ResultStack.Pop();
-                                        if (operation.Key == "_")
-                                            NewNode = new BinaryOperatorNode("-", Operand, operation.Value);
-                                        else
-                                            NewNode = new BinaryOperatorNode("!", Operand, operation.Value);
-                                    }
-                                    else
-                                    {
-                                        var SecondOperand = ResultStack.Pop();
-                                        var FirstOperand = ResultStack.Pop();
-                                        NewNode = new BinaryOperatorNode(operation.Key, FirstOperand, operation.Value);
-                                    }
-                                    ResultStack.Push(NewNode);
-                                }
-                                return ResultStack.Pop();
-                            }
-                            else
-                            {
-                                GoNext(brackets);
-                                throw new UnexpectedTokenException(CurrentLexeme.Line, CurrentLexeme.Value);
-                            }
-                        }
-
                         else //если что-то другое, то ошибка
                         {
                             GoNext(brackets);
@@ -366,7 +378,7 @@ namespace CPPDE
                 catch(SyntaxException)
                 {
                     GoNext(0);
-                    return null;
+                    return null; //если что-то не так с выражением
                 }
             }
 
@@ -387,12 +399,23 @@ namespace CPPDE
                     {
                         int Line = CurrentLexeme.Line;
                         string Value = CurrentLexeme.Value;
-                        while (CurrentLexeme.Value!=";")
+                        while (CurrentLexeme.Value!=";" && CurrentLexeme.Value!=",")
                         {
                             GoNext(0);
                             CurrentLexeme = GetLexeme();
                         }
-                        throw new UnexpectedTokenException(Line, Value);//плохо, идём до точки с запятой и кидаем исключение
+                        try
+                        {
+                            throw new UnexpectedTokenException(Line, Value);//плохо, идём до точки с запятой и кидаем исключение
+                        }
+                        catch(SyntaxException)
+                        {
+                            //если дошли до конца оператора
+                            if (CurrentLexeme.Value == ";")
+                                return;//то на выход
+                            else
+                                GetConcreteLexeme(","); //если конец файла, он отловится позже, в главном парсере
+                        }
                     }
                     else //если всё хорошо
                     {
@@ -405,7 +428,16 @@ namespace CPPDE
                             try
                             {
                                 AssignmentOperator oper = ParseAssignmentOperator();
-                                NodesStack.Peek().AddOperator(oper);
+                                if (oper!=null)
+                                    NodesStack.Peek().AddOperator(oper);
+                                else
+                                {
+                                    while (CurrentLexeme.Value != ";" || CurrentLexeme.Value != ",")
+                                    {
+                                        GoNext(0);
+                                        CurrentLexeme = GetLexeme();
+                                    }
+                                }
                             }
                             catch (SyntaxException)
                             {
@@ -432,14 +464,23 @@ namespace CPPDE
                         }
                         else
                         {
-                            int Line = CurrentLexeme.Line;
-                            string Value = CurrentLexeme.Value;
-                            while (CurrentLexeme.Value != ";")
+                            try
                             {
-                                GoNext(0);
-                                CurrentLexeme = GetLexeme();
+                                int Line = CurrentLexeme.Line;
+                                string Value = CurrentLexeme.Value;
+                                while (CurrentLexeme.Value != ";" && CurrentLexeme.Value != ",")
+                                {
+                                    GoNext(0);
+                                    CurrentLexeme = GetLexeme();
+                                }
+                                throw new UnexpectedTokenException(Line, Value);//плохо, идём до точки с запятой и кидаем исключение
                             }
-                            throw new UnexpectedTokenException(Line, Value);//плохо, идём до точки с запятой и кидаем исключение
+                            catch (SyntaxException)
+                            {
+                                if (CurrentLexeme.Value == ";")
+                                    return;
+                                else GetConcreteLexeme(","); //если запятая, то идём дальше
+                            }
                         }
                     }
                 }
@@ -505,13 +546,22 @@ namespace CPPDE
             //разбор условного оператора
             public static void ParseConditionOperator()
             {
+                AtomNode ConditionExpression;
                 int numLine = LexemesIterator;
-                GetConcreteLexeme("if");
-                GetConcreteLexeme("(");
-                AtomNode ConditionExpression = ParseExpression();
-                GetConcreteLexeme(")");
-                Lexeme CurrentLexeme = GetLexeme();
+                try
+                {
+                    GetConcreteLexeme("if");
+                    GetConcreteLexeme("(");
+                    ConditionExpression = ParseExpression();
+                    GetConcreteLexeme(")");
+
+                }
+                catch (SyntaxException)
+                {
+                    ConditionExpression = null;
+                }
                 //создаём ветку if
+                Lexeme CurrentLexeme = GetLexeme();
                 ConditionalBranchNode IfBranch = new ConditionalBranchNode(CurrentLexeme.Line);
                 NodesStack.Push(IfBranch);
 
@@ -730,12 +780,21 @@ namespace CPPDE
 
             public static void Parse()
             {
+                GetOperationsPriorities();
+                DoLexemsList();
                 MainRootNode root = new MainRootNode(LexemsForSyntaxAnalysis[0].Line);
                 LexemesIterator = 0;
                 NodesStack.Push(root);
-                while (LexemesIterator < LexemsForSyntaxAnalysis.Count)
-                    GetNextOperator();
-                //запомнить главный узел
+                try
+                {
+                    while (LexemesIterator < LexemsForSyntaxAnalysis.Count)
+                        GetNextOperator();
+                }
+                catch(UnexpectedEOFException)//все остальные иключения должны отлавливаться выше по рекурсии
+                {
+                    HandleEOFException();
+                }
+                Root = root;
             }
         }
     }

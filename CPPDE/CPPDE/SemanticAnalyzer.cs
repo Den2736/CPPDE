@@ -18,7 +18,7 @@ namespace CPPDE
             /// </summary>
             public static void Parse()
             {
-                throw new NotImplementedException();
+                Root.SemanticAnalysis();
             }
         }
     }

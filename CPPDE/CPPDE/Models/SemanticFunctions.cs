@@ -15,7 +15,7 @@ namespace C__DE.Models
 
     public abstract partial class BlockNode : Node
     {
-        public List<Variable> BlockVariables; //Переменные блока
+        public List<Variable> BlockVariables=new List<Variable>(); //Переменные блока
     }
 
     public abstract partial class AtomNode : Node
