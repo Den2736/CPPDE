@@ -6,13 +6,13 @@ using System.Threading.Tasks;
 
 namespace C__DE.Models.Exceptions.SemanticExceptions
 {
-    class UndefinedVariableException: SemanticException
+    class RedeclaringVariableException: SemanticException
     {
-        public override string Message => $"Unidentified identifier {VariableName} in line {LineNumber} ";
+        public override string Message => $"Redeclaring variable {VariableName} in line {LineNumber} ";
         public int LineNumber { get; }
         public string VariableName { get; }
 
-        public UndefinedVariableException(int lineNumber, string varName)
+        public RedeclaringVariableException(int lineNumber, string varName)
         {
             VariableName = varName;
             LineNumber = lineNumber;
