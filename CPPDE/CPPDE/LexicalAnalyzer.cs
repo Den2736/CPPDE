@@ -17,7 +17,7 @@ namespace CPPDE
             private static IEnumerable<string> Content { get; set; }
 
             /// <summary>
-            /// Receives the path to the source. Generates a lexeme dictionary and a list of variables.
+            /// Receives the path to the source. Generates a lexeme dictionary.
             /// </summary>
             /// <param name="source">путь к файлу, который необходимо скомпилировать</param>
             /// <exception cref="SourceNotFoundException"></exception>
@@ -27,59 +27,43 @@ namespace CPPDE
                 source = source.Replace("\"", "");  // remove all commas
                 Content = GetContent(source);
                 Lexemes = GetLexemes();
-                Variables = GetVariables();
             }
 
             private static Dictionary<int, IEnumerable<string>> GetLexemes()
             {
                 int lineNumber = 0;
                 var lexemes = new Dictionary<int, IEnumerable<string>>();
+
+                var reWord = new Regex(@"\w");
                 foreach (var line in Content)
                 {
-                    lexemes.Add(++lineNumber, line.Split());
-                }
-
-                return lexemes;
-            }
-            private static List<Variable> GetVariables()
-            {
-                var variables = new List<Variable>();
-                var types = "";
-                foreach (var type in Types)
-                {
-                    types += $"{type}|";
-                }
-                types = types.Remove(types.Length-1);  // odd '|'
-
-                var reDeclaring = new Regex($@"\b({types}).+=");
-                var reType = new Regex(types);
-                var reIdentifier = new Regex(@"\b[\w]+[\w\d]*\b");
-                int lineNumber = 0;
-
-                foreach (var line in Content)
-                {
-                    lineNumber++;
-                    foreach (Match declaring in reDeclaring.Matches(line))
+                    var lineLexemes = new List<string>();
+                    var word = "";
+                    foreach (var sym in line)
                     {
-                        string type = reType.Match(declaring.Value)?.Value;
-                        string identifier = reIdentifier.Match(declaring.Value.Replace(type, ""))?.Value;
-
-                        if(string.IsNullOrEmpty(identifier) && !Types.Contains(identifier))
+                        if (reWord.IsMatch(sym.ToString()))
                         {
-                            throw new WrongIdentifierException(lineNumber, line);
+                            word += sym;
                         }
                         else
                         {
-                            variables.Add(new Variable()
+                            if (!string.IsNullOrEmpty(word))
                             {
-                                Name = identifier,
-                                Type = type,
-                                IsDeclared = true
-                            });
+                                lineLexemes.Add(word);
+                                word = "";
+                            }
+
+                            if (!char.IsWhiteSpace(sym))
+                            {
+                                lineLexemes.Add(sym.ToString());
+                            }
                         }
                     }
+
+                    lexemes.Add(++lineNumber, lineLexemes);
                 }
-                return variables;
+
+                return lexemes;
             }
             private static IEnumerable<string> GetContent(string source)
             {

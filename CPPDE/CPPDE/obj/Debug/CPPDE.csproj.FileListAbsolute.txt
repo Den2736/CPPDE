@@ -4,3 +4,10 @@ D:\Desktop\Translator\CPPDE\CPPDE\CPPDE\obj\Debug\C++DE.pdb
 D:\Desktop\Translator\CPPDE\CPPDE\CPPDE\obj\Debug\CPPDE.csprojResolveAssemblyReference.cache
 D:\Desktop\Translator\CPPDE\CPPDE\CPPDE\bin\Debug\C++DE.exe
 D:\Desktop\Translator\CPPDE\CPPDE\CPPDE\bin\Debug\C++DE.pdb
+D:\GitHubRepos\CPPDE\CPPDE\CPPDE\bin\Debug\C++DE.exe.config
+D:\GitHubRepos\CPPDE\CPPDE\CPPDE\bin\Debug\C++DE.exe
+D:\GitHubRepos\CPPDE\CPPDE\CPPDE\bin\Debug\C++DE.pdb
+D:\GitHubRepos\CPPDE\CPPDE\CPPDE\obj\Debug\CPPDE.csprojResolveAssemblyReference.cache
+D:\GitHubRepos\CPPDE\CPPDE\CPPDE\obj\Debug\CPPDE.csproj.CoreCompileInputs.cache
+D:\GitHubRepos\CPPDE\CPPDE\CPPDE\obj\Debug\C++DE.exe
+D:\GitHubRepos\CPPDE\CPPDE\CPPDE\obj\Debug\C++DE.pdb

@@ -14,12 +14,12 @@ namespace CPPDE
         public static IEnumerable<string> Types = new string[] { "int", "char", "string", "float", "bool" };
 
         /// <summary>
-        /// Lexemes in format (line number - lexeme)
+        /// Lexemes in format (line number - lexemes)
         /// </summary>
         public static Dictionary<int, IEnumerable<string>> Lexemes { get; set; }
 
         /// <summary>
-        /// List of variables in format (identifier - type)
+        /// List of variables
         /// </summary>
         public static List<Variable> Variables { get; set; }
 
