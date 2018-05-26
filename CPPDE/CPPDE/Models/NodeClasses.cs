@@ -55,7 +55,7 @@ namespace C__DE.Models
 
     public abstract partial class BlockNode : Node
     {
-        public List<Node> ChildrenOperators; //Ссылки на все внутренние операторы
+        public List<Node> ChildrenOperators=new List<Node>(); //Ссылки на все внутренние операторы
         public void AddOperator(Node Operator)//метод добавления оператора в список дочерних
         {
             ChildrenOperators.Add(Operator);
@@ -224,7 +224,6 @@ namespace C__DE.Models
     {
         public ConditionalBranchNode(int numLine)
         {
-            ChildrenOperators = new List<Node>();
             TypeOfNode = NodeType.ConditionalBranch;
         }
     }

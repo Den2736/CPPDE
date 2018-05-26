@@ -45,7 +45,6 @@ namespace CPPDE
             //Назначаем приоритет операциям
             public static void GetOperationsPriorities()
             {
-                Dictionary<string, int> OperationPriorities = new Dictionary<string, int>();
                 OperationPriorities.Add("(", 0);
                 OperationPriorities.Add(")", 0);
 
@@ -123,10 +122,10 @@ namespace CPPDE
                 if ((s1 == "" || s1 == "(") && (s2 == "-"))
                     return true;
                 if ((s1 == "" || s1 == "(" || OperationPriorities.Keys.Contains(s1) && s1 != ")") && 
-                    (char.IsLetterOrDigit(s2[0]) || s2=="!"  || s2[0]=='\'' || s2[0]=='\"'))
+                    (char.IsLetterOrDigit(s2[0]) || s2=="!"  || s2[0]=='\'' || s2[0]=='\"' || s2=="("))
                     return true;
-                if ((char.IsLetterOrDigit(s1[0]) || s1 == ")" || s1[0] == '\'' || s1[0] == '\"') && 
-                    (OperationPriorities.Keys.Contains(s2) && s2 != "!"))
+                if (s1.Length>0 && ((char.IsLetterOrDigit(s1[0]) || s1 == ")" || s1[0] == '\'' || s1[0] == '\"') && 
+                    (OperationPriorities.Keys.Contains(s2) && s2 != "!")))
                     return true;
                 return false;
             }
@@ -169,7 +168,7 @@ namespace CPPDE
                         throw new UnexpectedEOFException();
                     CurrentLexeme = GetLexeme();
 
-                    if (CurrentLexeme.Value == "," || CurrentLexeme.Value == ";")//если выражение окончено
+                    if (CurrentLexeme.Value == "," || CurrentLexeme.Value == ";" || (brackets==0 && CurrentLexeme.Value==")"))//если выражение окончено
                     {
                         //если всё хорошо
                         if (LastLexeme.Value == ")" || char.IsLetterOrDigit(LastLexeme.Value[0]) || LastLexeme.Value[0] == '\'' || LastLexeme.Value[0] == '\"')
@@ -194,7 +193,7 @@ namespace CPPDE
                                 {
                                     var SecondOperand = ResultStack.Pop();
                                     var FirstOperand = ResultStack.Pop();
-                                    NewNode = new BinaryOperatorNode(operation.Key, FirstOperand, operation.Value);
+                                    NewNode = new BinaryOperatorNode(operation.Key, FirstOperand, SecondOperand, operation.Value);
                                 }
                                 ResultStack.Push(NewNode);
                             }
@@ -262,8 +261,7 @@ namespace CPPDE
                         else if (CurrentLexeme.Value == ")")
                         {
                             
-                            while ((OperationStack.Peek().Key != "(" && brackets!=0) || //разгрести до открывающей скобки
-                                    ((OperationStack.Count!=0) && brackets==0)) //или до конца
+                            while ((brackets == 0 && (OperationStack.Count != 0)) || ( (brackets != 0) && (OperationStack.Peek().Key != "(" ))) //разгрести до открывающей скобки или до конца
                                 {
                                     if (OperationStack.Count == 0)//если стек пустой, то нет соответствующей скобки
                                     {
@@ -569,6 +567,8 @@ namespace CPPDE
                     GetNextOperator();
                 else
                 {
+                    GetConcreteLexeme("{");
+                    CurrentLexeme = GetLexeme();
                     while (CurrentLexeme.Value!="}" && LexemesIterator<LexemsForSyntaxAnalysis.Count)
                     {
                         GetNextOperator();
@@ -711,6 +711,7 @@ namespace CPPDE
                     CurrentLexeme = GetLexeme();
                 }
                 GetConcreteLexeme(")");
+                GetConcreteLexeme(";");
             }
 
             //разбор оператора записи
@@ -721,7 +722,6 @@ namespace CPPDE
                 Lexeme CurrentLexeme = GetLexeme();
                 AtomNode Exp = ParseExpression();
                 NodesStack.Peek().AddOperator(new WriteOperator(Exp, CurrentLexeme.Line));
-                LexemesIterator++;
                 CurrentLexeme = GetLexeme();
                 while (CurrentLexeme.Value!=")")
                 {
@@ -732,6 +732,7 @@ namespace CPPDE
                     CurrentLexeme = GetLexeme();
                 }
                 GetConcreteLexeme(")");
+                GetConcreteLexeme(";");
             }
 
             //получение следующего оператора
@@ -770,6 +771,7 @@ namespace CPPDE
                     {
                         AtomNode Exp = ParseExpression();
                         NodesStack.Peek().AddOperator(Exp);
+                        GetConcreteLexeme(";");
                     }
                 }
                 catch (SyntaxException)

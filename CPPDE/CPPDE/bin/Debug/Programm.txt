@@ -1,1 +1,9 @@
-int a=0, b=9 ;
+int a=0, b=9;
+scan(a,b);
+while (true)
+if (a>b)
+{a=(b-a)*2;
+b=0;
+} else 
+b=a;
+print(a,b);
