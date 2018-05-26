@@ -34,9 +34,34 @@ namespace CPPDE
             {
                 int lineNumber = 0;
                 var lexemes = new Dictionary<int, IEnumerable<string>>();
+
+                var reWord = new Regex(@"\w");
                 foreach (var line in Content)
                 {
-                    lexemes.Add(++lineNumber, line.Split());
+                    var lineLexemes = new List<string>();
+                    var word = "";
+                    foreach (var sym in line)
+                    {
+                        if (reWord.IsMatch(sym.ToString()))
+                        {
+                            word += sym;
+                        }
+                        else
+                        {
+                            if (!string.IsNullOrEmpty(word))
+                            {
+                                lineLexemes.Add(word);
+                                word = "";
+                            }
+
+                            if (!char.IsWhiteSpace(sym))
+                            {
+                                lineLexemes.Add(sym.ToString());
+                            }
+                        }
+                    }
+
+                    lexemes.Add(++lineNumber, lineLexemes);
                 }
 
                 return lexemes;
@@ -49,7 +74,7 @@ namespace CPPDE
                 {
                     types += $"{type}|";
                 }
-                types = types.Remove(types.Length-1);  // odd '|'
+                types = types.Remove(types.Length - 1);  // odd '|'
 
                 var reDeclaring = new Regex($@"\b({types}).+=");
                 var reType = new Regex(types);
@@ -64,7 +89,7 @@ namespace CPPDE
                         string type = reType.Match(declaring.Value)?.Value;
                         string identifier = reIdentifier.Match(declaring.Value.Replace(type, ""))?.Value;
 
-                        if(string.IsNullOrEmpty(identifier) && !Types.Contains(identifier))
+                        if (string.IsNullOrEmpty(identifier) && !Types.Contains(identifier))
                         {
                             throw new WrongIdentifierException(lineNumber, line);
                         }
