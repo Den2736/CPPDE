@@ -60,6 +60,12 @@ namespace CPPDE
                         }
                     }
 
+                    if (!string.IsNullOrEmpty(word))
+                    {
+                        lineLexemes.Add(word);
+                        word = "";
+                    }
+
                     lexemes.Add(++lineNumber, lineLexemes);
                 }
 
