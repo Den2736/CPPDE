@@ -285,7 +285,7 @@ namespace CPPDE
                                     {
                                         var SecondOperand = ResultStack.Pop();
                                         var FirstOperand = ResultStack.Pop();
-                                        NewNode = new BinaryOperatorNode(operation.Key, FirstOperand, operation.Value);
+                                        NewNode = new BinaryOperatorNode(operation.Key, FirstOperand,SecondOperand, operation.Value);
                                     }
                                     ResultStack.Push(NewNode);
                                 }
@@ -326,7 +326,7 @@ namespace CPPDE
                                         {
                                             var SecondOperand = ResultStack.Pop();
                                             var FirstOperand = ResultStack.Pop();
-                                            NewNode = new BinaryOperatorNode(operation.Key, FirstOperand, operation.Value);
+                                            NewNode = new BinaryOperatorNode(operation.Key, FirstOperand, SecondOperand, operation.Value);
                                         }
                                         ResultStack.Push(NewNode);
                                     }

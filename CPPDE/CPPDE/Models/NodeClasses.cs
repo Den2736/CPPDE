@@ -88,6 +88,8 @@ namespace C__DE.Models
             MainVariable.WasUsed=true;
             LineNumber = numLine;
             Value = ConstValue;
+            MainVariable.Type = Type;
+            MainVariable.WasIdentified = true;
             //Это никуда в таблицу переменных не заносится, просто само себе
         }
         public override void SetParentBlock(BlockNode Parent)
@@ -150,7 +152,7 @@ namespace C__DE.Models
             Value = Operation;
             FirstOperand = First;
             SecondOperand = null;
-            IsUnary = false;
+            IsUnary = true;
             LineNumber = numLine;
             if (Operation == "-")
                 TypeOfNode = NodeType.ArithmeticOperator;

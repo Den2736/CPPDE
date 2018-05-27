@@ -247,8 +247,7 @@ namespace C__DE.Models
                 {
                     IsSemanticCorrect = false;
                 }
-                bool IsSecondOperandCorrect=SecondOperand.SemanticAnalysis();//дальше проверка совместимости типов и корректности операций
-                if (IsSecondOperandCorrect && IsSemanticCorrect)
+                if (IsSemanticCorrect)
                 {
                     try
                     {
@@ -617,9 +616,10 @@ namespace C__DE.Models
         public override bool SemanticAnalysis()
         {
             IsSemanticCorrect = true;
+            MainVariable = new Variable();
             try
             {
-                AssignedVariable.SemanticAnalysis();
+                IsSemanticCorrect &= AssignedVariable.SemanticAnalysis();
                 AssignedVariable.MainVariable.WasNewValueUsed = false;
                 AssignedVariable.MainVariable.WasAssignedNewValue = LineNumber;
                 AssignedVariable.MainVariable.WasUsed = true;
@@ -631,7 +631,7 @@ namespace C__DE.Models
 
             try
             {
-                RightPart.SemanticAnalysis();
+                IsSemanticCorrect &= RightPart.SemanticAnalysis();
             }
             catch (SemanticException)
             {
