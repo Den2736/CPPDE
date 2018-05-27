@@ -5,10 +5,10 @@ using System.Linq;
 using System.Text;
 using System.Threading.Tasks;
 
-namespace C__DE.Models.Exceptions.SemanticExceptions
+namespace C__DE.Models.Warnings
 {
-    class SemanticException: CompilerException
+    class WarningMessage: CompilerException
     {
-        public override string Message => "Semantic error.";
+            public override string Message => "Warning message.";
     }
 }

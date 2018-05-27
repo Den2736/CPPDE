@@ -1,4 +1,5 @@
 ﻿using C__DE.Models.Exceptions.SemanticExceptions;
+using C__DE.Models.Warnings;
 using System;
 using System.Collections.Generic;
 using System.Linq;
@@ -16,6 +17,25 @@ namespace C__DE.Models
     public abstract partial class BlockNode : Node
     {
         public List<Variable> BlockVariables=new List<Variable>(); //Переменные блока
+
+        //проверяется все ли переменные и их значения были использованы
+        public void CheckVariables()
+        {
+            foreach (var BlockVar in BlockVariables)
+            {
+                try
+                {
+                    if (!BlockVar.WasUsed)
+                        throw new UnusedVariableWarning(BlockVar.DeclaredLine, BlockVar.Name);
+                    if (!BlockVar.WasNewValueUsed)
+                        throw new UnusedValueWarning(BlockVar.WasAssignedNewValue, BlockVar.Name);
+                }
+                catch (WarningMessage)
+                {
+
+                }
+            }
+        }
     }
 
     public abstract partial class AtomNode : Node
@@ -40,7 +60,7 @@ namespace C__DE.Models
             while (true)
             {
                 Variable possibleVariable = parent.BlockVariables.FirstOrDefault(var => var.Name == Value);
-                if (possibleVariable.Name != null)
+                if (possibleVariable != null)
                 {
                     MainVariable = possibleVariable;
                     return true;
@@ -171,12 +191,15 @@ namespace C__DE.Models
         public override bool SemanticAnalysis()
         {
             //будем считать, что определено
+            MainVariable = new Variable();
             MainVariable.WasIdentified = true;
 
             try
             {
+                IsSemanticCorrect = FirstOperand.SemanticAnalysis();
                 FirstOperand.MainVariable.WasUsed = true;
                 IsSemanticCorrect =FirstOperand.SemanticAnalysis();
+                FirstOperand.MainVariable.WasNewValueUsed = true;
                 if (!FirstOperand.MainVariable.WasIdentified)
                     throw new UnidentifiedVariableException(FirstOperand.LineNumber, FirstOperand.MainVariable.Name);
             }
@@ -214,13 +237,15 @@ namespace C__DE.Models
             {
                 try
                 {
+                    IsSemanticCorrect &= SecondOperand.SemanticAnalysis();
                     SecondOperand.MainVariable.WasUsed = true;
+                    SecondOperand.MainVariable.WasNewValueUsed = true;
                     if (!SecondOperand.MainVariable.WasIdentified)
                         throw new UnidentifiedVariableException(SecondOperand.LineNumber, SecondOperand.MainVariable.Name);
                 }
                 catch (SemanticException)
                 {
-
+                    IsSemanticCorrect = false;
                 }
                 bool IsSecondOperandCorrect=SecondOperand.SemanticAnalysis();//дальше проверка совместимости типов и корректности операций
                 if (IsSecondOperandCorrect && IsSemanticCorrect)
@@ -337,7 +362,11 @@ namespace C__DE.Models
                     IsSemanticCorrect = false;
                 }
             }
-        return IsSemanticCorrect;
+
+            IfBranch.CheckVariables();
+            if (ElseBranch != null)
+                ElseBranch.CheckVariables();
+            return IsSemanticCorrect;
         }
     }
 
@@ -381,15 +410,18 @@ namespace C__DE.Models
                 }
             }
 
-            if (ContinueCondition!=null)
+            if (IsPredCondition)
             {
-                try
+                if (ContinueCondition != null)
                 {
-                    IsSemanticCorrect &= ContinueCondition.SemanticAnalysis();
-                }
-                catch(SemanticException)
-                {
-                    IsSemanticCorrect = false;
+                    try
+                    {
+                        IsSemanticCorrect &= ContinueCondition.SemanticAnalysis();
+                    }
+                    catch (SemanticException)
+                    {
+                        IsSemanticCorrect = false;
+                    }
                 }
             }
 
@@ -417,6 +449,18 @@ namespace C__DE.Models
                 }
             }
 
+            if (ContinueCondition!=null) //ещё раз проверить условие, так как оно проверятся на каждой итерации
+            {
+                try
+                {
+                    IsSemanticCorrect &= ContinueCondition.SemanticAnalysis();
+                }
+                catch (SemanticException)
+                {
+                    IsSemanticCorrect = false;
+                }
+            }
+            CheckVariables();
             return IsSemanticCorrect;
         }
     }
@@ -576,6 +620,9 @@ namespace C__DE.Models
             try
             {
                 AssignedVariable.SemanticAnalysis();
+                AssignedVariable.MainVariable.WasNewValueUsed = false;
+                AssignedVariable.MainVariable.WasAssignedNewValue = LineNumber;
+                AssignedVariable.MainVariable.WasUsed = true;
             }
             catch(SemanticException)
             {
@@ -598,7 +645,7 @@ namespace C__DE.Models
                     {
                         case "=":
                             {
-                                MainVariable.WasIdentified = true;
+                                AssignedVariable.MainVariable.WasIdentified = true;
                                 CheckTypesAssign();
                                 break;
                             }
@@ -654,11 +701,11 @@ namespace C__DE.Models
                     IsSemanticCorrect = false;
                 }
             }
+            CheckVariables();
             return IsSemanticCorrect;
         }
     }
 
-    //С чтением и записью хз как, пока строка будет
     public partial class ReadOperator : AtomNode
     {
         public override bool SemanticAnalysis()
@@ -667,6 +714,9 @@ namespace C__DE.Models
             {
                 IsSemanticCorrect = ReadVariable.SemanticAnalysis();
                 ReadVariable.MainVariable.WasIdentified = true;
+                ReadVariable.MainVariable.WasNewValueUsed = false;
+                ReadVariable.MainVariable.WasUsed = true;
+                ReadVariable.MainVariable.WasAssignedNewValue = LineNumber;
             }
             catch (SemanticException)
             {
@@ -682,8 +732,9 @@ namespace C__DE.Models
         {
             try
             {
-                WriteVariable.MainVariable.WasUsed = true;
                 IsSemanticCorrect = WriteVariable.SemanticAnalysis();
+                WriteVariable.MainVariable.WasUsed = true;
+                WriteVariable.MainVariable.WasNewValueUsed = true;
                 if (!WriteVariable.MainVariable.WasIdentified)
                     throw new UnidentifiedVariableException(WriteVariable.LineNumber, WriteVariable.MainVariable.Name);
             }

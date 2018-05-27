@@ -37,6 +37,8 @@ namespace CPPDE
                 //var a = 0;
                 SyntaxAnalyzer.Parse();
                 Console.WriteLine("Синтаксический анализ окончен");
+                SemanticAnalyzer.Parse();
+                Console.WriteLine("Семантический анализ окончен");
             }
             catch (CompilerException e)
             {

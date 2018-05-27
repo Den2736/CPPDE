@@ -267,9 +267,9 @@ namespace C__DE.Models
     {
         //оператор присваивания, сюда входят также операторы += -= и так далее
         public string AssignmentOperation; //сама операция (просто присваивание или ещё что-то)
-        public AtomNode AssignedVariable;//либо узел -переменная, либо оператор объявления переменной
+        public VariableNode AssignedVariable;//либо узел -переменная, либо оператор объявления переменной
         public AtomNode RightPart; //присваиваться может только для переменной
-        public AssignmentOperator(AtomNode Var, AtomNode Expression, string Operation, int numLine)
+        public AssignmentOperator(VariableNode Var, AtomNode Expression, string Operation, int numLine)
         {
             AssignedVariable = Var;
             RightPart = Expression;
@@ -282,6 +282,7 @@ namespace C__DE.Models
         {
             parentBlock = Parent;
             AssignedVariable.SetParentBlock(Parent);
+            RightPart.SetParentBlock(Parent);
         }
 
     }
