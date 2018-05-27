@@ -678,8 +678,12 @@ namespace CPPDE
                     GetNextOperator();
                 else
                 {
+                    GetConcreteLexeme("{");
                     while (CurrentLexeme.Value != "}" && LexemesIterator < LexemsForSyntaxAnalysis.Count)
+                    {
                         GetNextOperator();
+                        CurrentLexeme = GetLexeme();
+                    }
                     GetConcreteLexeme("}");
                 }
                 NodesStack.Pop();
