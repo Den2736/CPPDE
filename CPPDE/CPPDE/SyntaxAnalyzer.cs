@@ -134,16 +134,24 @@ namespace CPPDE
             public static void GoNext(int brackets)
             {
                 //если лексемы закончились
-                if (LexemesIterator >= LexemsForSyntaxAnalysis.Count)
-                    throw new UnexpectedEOFException();
-                if (GetLexeme().Value == ";" || GetLexeme().Value == ",")
-                    return;
-                if (GetLexeme().Value == ")")
-                    if (brackets == 0)
+                while (true)
+                {
+                    if (LexemesIterator >= LexemsForSyntaxAnalysis.Count)
+                        throw new UnexpectedEOFException();
+                    if (GetLexeme().Value == ";" || GetLexeme().Value == ",")
                         return;
-                    else brackets--;
-                if (GetLexeme().Value == "(")
-                    brackets++;
+                    if (GetLexeme().Value == ")")
+                        if (brackets == 0)
+                            return;
+                        else brackets--;
+                    if (GetLexeme().Value == "(")
+                        brackets++;
+                    else if (ReservedWords.Contains(GetLexeme().Value) || Types.Contains(GetLexeme().Value))//может просто пропустили точку с запятой, и дальше идёт новый оператор
+                        return;
+                    if (GetLexeme().Value == "{" || GetLexeme().Value == "}")
+                        return;
+                    LexemesIterator++; //если ничего из этого нет, то идём дальше
+                }
             }
 
             //разбор выражения (арифметического, логического)
@@ -170,7 +178,18 @@ namespace CPPDE
 
                     if (CurrentLexeme.Value == "," || CurrentLexeme.Value == ";" || (brackets==0 && CurrentLexeme.Value==")"))//если выражение окончено
                     {
-                        //если всё хорошо
+                        if (brackets>0) //плохо со скобками
+                        {
+                            try
+                            {
+                                throw new UnmatchedOpenBracketsInExpresssion(CurrentLexeme.Line, CurrentLexeme.Value);
+                            }
+                            catch(SyntaxException e)
+                            {
+                                Console.WriteLine(e.Message);
+                            }
+                        }
+                        //дальше проверяем последнюю лексему выражения
                         if (LastLexeme.Value == ")" || char.IsLetterOrDigit(LastLexeme.Value[0]) || LastLexeme.Value[0] == '\'' || LastLexeme.Value[0] == '\"')
                         {
                             while (OperationStack.Count > 0)
@@ -199,20 +218,129 @@ namespace CPPDE
                             }
                             return ResultStack.Pop();
                         }
+                        //если последний оператор не такой, ,бросаем исключение
                         else
                         {
-                            GoNext(brackets);
+                            throw new UnexpectedEndOfExpressionException(CurrentLexeme.Line, CurrentLexeme.Value);
+                        }
+                    }
+
+                    //тут возможно забыли поставить точку с запятой
+                    if (ReservedWords.Contains(CurrentLexeme.Value) || Types.Contains(CurrentLexeme.Value) || CurrentLexeme.Value=="{" || CurrentLexeme.Value =="}")
+                    {
+                        try
+                        {
+                            throw new ExpectedAnotherSymbolException(";", CurrentLexeme.Line, CurrentLexeme.Value);
+                            //в этом случае отловим исключение сразу, и потом в программе начнёт парситься новый оператор
+                        }
+                        catch (SyntaxException e)
+                        {
+                            Console.WriteLine(e.Message);
+                            //аналогично пробуем собрать то, что есть
+                            //если всё хорошо
+                            if (LastLexeme.Value == ")" || char.IsLetterOrDigit(LastLexeme.Value[0]) || LastLexeme.Value[0] == '\'' || LastLexeme.Value[0] == '\"')
+                            {
+                                while (OperationStack.Count > 0)
+                                {
+                                    //извлекаем верхнюю операцию
+                                    var operation = OperationStack.Pop();
+
+                                    //новый узел для операции
+                                    BinaryOperatorNode NewNode;
+
+                                    if (operation.Key == "!" || operation.Key == "_")//если унарная
+                                    {
+                                        var Operand = ResultStack.Pop();
+                                        if (operation.Key == "_")
+                                            NewNode = new BinaryOperatorNode("-", Operand, operation.Value);
+                                        else
+                                            NewNode = new BinaryOperatorNode("!", Operand, operation.Value);
+                                        ResultStack.Push(NewNode);
+                                    }
+                                    else if (operation.Key=="(")
+                                    {
+                                        OperationStack.Pop();
+                                    }
+                                    else
+                                    {
+                                        var SecondOperand = ResultStack.Pop();
+                                        var FirstOperand = ResultStack.Pop();
+                                        NewNode = new BinaryOperatorNode(operation.Key, FirstOperand, SecondOperand, operation.Value);
+                                        ResultStack.Push(NewNode);
+                                    }
+
+                                }
+                                return ResultStack.Pop();
+                            }
+                            //если последний оператор не такой, ,бросаем исключение
+                            else
+                            {
+                                throw new UnexpectedEndOfExpressionException(CurrentLexeme.Line, CurrentLexeme.Value);
+                            }
+                        }
+                    }
+
+                    //Дальше проверяем, может ли два символа идти вместе (например, два идентифкатора не могут идти подряд)
+                    else if (!CanBeTogether(LastLexeme.Value, CurrentLexeme.Value))
+                    {
+                        //проверяем, может ли вторая лексема быть началом нового выражения
+                        if (char.IsLetterOrDigit(CurrentLexeme.Value[0]) || CurrentLexeme.Value == "!" || CurrentLexeme.Value[0] == '\'' || CurrentLexeme.Value[0] == '\"' || CurrentLexeme.Value == "(")
+                            //Если да, то собираем всё до первой лексемы в кучу
+                        {
+                            if (brackets > 0) //плохо со скобками
+                            {
+                                try
+                                {
+                                    throw new UnmatchedOpenBracketsInExpresssion(CurrentLexeme.Line, CurrentLexeme.Value);
+                                }
+                                catch (SyntaxException e)
+                                {
+                                    Console.WriteLine(e.Message);
+                                }
+                            }
+                            //дальше проверяем последнюю лексему выражения
+                            if (LastLexeme.Value == ")" || char.IsLetterOrDigit(LastLexeme.Value[0]) || LastLexeme.Value[0] == '\'' || LastLexeme.Value[0] == '\"')
+                            {
+                                while (OperationStack.Count > 0)
+                                {
+                                    //извлекаем верхнюю операцию
+                                    var operation = OperationStack.Pop();
+
+                                    //новый узел для операции
+                                    BinaryOperatorNode NewNode;
+
+                                    if (operation.Key == "!" || operation.Key == "_")//если унарная
+                                    {
+                                        var Operand = ResultStack.Pop();
+                                        if (operation.Key == "_")
+                                            NewNode = new BinaryOperatorNode("-", Operand, operation.Value);
+                                        else
+                                            NewNode = new BinaryOperatorNode("!", Operand, operation.Value);
+                                        ResultStack.Push(NewNode);
+                                    }
+                                    else if (operation.Key == "(")
+                                    {
+                                        OperationStack.Pop();
+                                    }
+                                    else
+                                    {
+                                        var SecondOperand = ResultStack.Pop();
+                                        var FirstOperand = ResultStack.Pop();
+                                        NewNode = new BinaryOperatorNode(operation.Key, FirstOperand, SecondOperand, operation.Value);
+                                        ResultStack.Push(NewNode);
+                                    }
+                                }
+                                return ResultStack.Pop();
+                            }
+                            //если что-то плохо:
+                            //идём до конца оператора
+                            GoNext(0);
+                            //и бросаем исключение
                             throw new UnexpectedTokenException(CurrentLexeme.Line, CurrentLexeme.Value);
                         }
                     }
 
-                    if (ReservedWords.Contains(CurrentLexeme.Value) || !(CanBeTogether(LastLexeme.Value, CurrentLexeme.Value)))
-                    {
-                        GoNext(brackets);
-                        throw new UnexpectedTokenException(CurrentLexeme.Line, CurrentLexeme.Value);
-                    }
-
-                    else //если всё хорошо
+                    else //если всё хорошо, идём дальше по выражению
                     {
                         if (char.IsDigit(CurrentLexeme.Value[0])) //То это числовая константа
                         {
@@ -336,7 +464,7 @@ namespace CPPDE
 
                         }
 
-                        else //если что-то другое, то ошибка
+                        else //если что-то другое, то ошибка (по идее ничего другого быть не должно, но на всякий случай)
                         {
                             GoNext(brackets);
                             throw new UnexpectedTokenException(CurrentLexeme.Line, CurrentLexeme.Value);
@@ -348,14 +476,14 @@ namespace CPPDE
                     }
                 }
             }
+            //по идее после этого указатель будет стоять на разделителе или начале следующего оператора
 
             //разбор оператора присваивания
             public static AssignmentOperator ParseAssignmentOperator()
             {
-                Lexeme CurrentLexeme=GetLexeme();
+                Lexeme CurrentLexeme=GetLexeme(); //тут по идее тоже проблем быть не должно, потому что тогда это будет начало другого оператора
                 if ((Types.Contains(CurrentLexeme.Value)) || (ReservedWords.Contains(CurrentLexeme.Value)) || !char.IsLetter(CurrentLexeme.Value[0]))
                 {
-                    GoNext(0);
                     throw new UnexpectedTokenException(CurrentLexeme.Line, CurrentLexeme.Value);
                 }
                 VariableNode AssignedVariable = new VariableNode(CurrentLexeme.Value, CurrentLexeme.Line);
@@ -370,13 +498,14 @@ namespace CPPDE
                 try
                 {
                     AtomNode Expression = ParseExpression();
-                    //NodesStack.Peek().AddOperator(new AssignmentOperator(AssignedVariable,Expression,CurrentLexeme.Value, AssignedVariable.LineNumber));
+                    //если всё хорошо, возвращаем новый узел
                     return new AssignmentOperator(AssignedVariable, Expression, CurrentLexeme.Value, AssignedVariable.LineNumber);
                 }
-                catch(SyntaxException)
+                catch(SyntaxException e)
                 {
-                    GoNext(0);
+                    Console.WriteLine(e.Message);
                     return null; //если что-то не так с выражением
+                    //Указатель всё равно будет стоять на разделителе или начале следующего оператора, если пользователь не поставил разделитель
                 }
             }
 
@@ -397,8 +526,10 @@ namespace CPPDE
                     {
                         int Line = CurrentLexeme.Line;
                         string Value = CurrentLexeme.Value;
-                        while (CurrentLexeme.Value!=";" && CurrentLexeme.Value!=",")
+                        //что делать, если пользователь написал фигню?
+                        while (CurrentLexeme.Value!=";" && CurrentLexeme.Value!=",") //может, тут ещё фигурные скобки добавить?
                         {
+                            LexemesIterator++;
                             GoNext(0);
                             CurrentLexeme = GetLexeme();
                         }
@@ -406,8 +537,9 @@ namespace CPPDE
                         {
                             throw new UnexpectedTokenException(Line, Value);//плохо, идём до точки с запятой и кидаем исключение
                         }
-                        catch(SyntaxException)
+                        catch(SyntaxException e)
                         {
+                            Console.WriteLine(e.Message);
                             //если дошли до конца оператора
                             if (CurrentLexeme.Value == ";")
                                 return;//то на выход
@@ -428,19 +560,15 @@ namespace CPPDE
                                 AssignmentOperator oper = ParseAssignmentOperator();
                                 if (oper!=null)
                                     NodesStack.Peek().AddOperator(oper);
-                                else
-                                {
-                                    while (CurrentLexeme.Value != ";" || CurrentLexeme.Value != ",")
-                                    {
-                                        GoNext(0);
-                                        CurrentLexeme = GetLexeme();
-                                    }
-                                }
+                            //После этого указатель будет стоять на разделителе или начале следующего оператора, даже если null
                             }
-                            catch (SyntaxException)
+                            //сюда доходить не должен, но вдруг там совсем дичь
+                            catch (SyntaxException e)
                             {
+                                Console.WriteLine(e.Message);
                                 if (LexemesIterator == LexemsForSyntaxAnalysis.Count)
                                     throw new UnexpectedEOFException();
+                                CurrentLexeme = GetLexeme();
                                 int Line = CurrentLexeme.Line;
                                 string Value = CurrentLexeme.Value;
                                 while (CurrentLexeme.Value != ";" || CurrentLexeme.Value != ",")
@@ -462,23 +590,20 @@ namespace CPPDE
                         }
                         else
                         {
-                            try
+                            try//бросим исключение и тут же выловим
                             {
-                                int Line = CurrentLexeme.Line;
-                                string Value = CurrentLexeme.Value;
-                                while (CurrentLexeme.Value != ";" && CurrentLexeme.Value != ",")
-                                {
-                                    GoNext(0);
-                                    CurrentLexeme = GetLexeme();
-                                }
-                                throw new UnexpectedTokenException(Line, Value);//плохо, идём до точки с запятой и кидаем исключение
+                                throw new ExpectedAnotherSymbolException("';' or ','", CurrentLexeme.Line, CurrentLexeme.Value);
                             }
-                            catch (SyntaxException)
+                            catch (SyntaxException e)
                             {
-                                if (CurrentLexeme.Value == ";")
-                                    return;
-                                else GetConcreteLexeme(","); //если запятая, то идём дальше
+                                Console.WriteLine(e.Message);
                             }
+                            if (ReservedWords.Contains(CurrentLexeme.Value) || Types.Contains(CurrentLexeme.Value))
+                                //тут тоже на случай, если забыли разделитель
+                                return; //пошли на следующий оператор
+                            if (char.IsDigit(CurrentLexeme.Value[0]) || CurrentLexeme.Value[0] == '\'' || CurrentLexeme.Value[0] == '\"')
+                                return; //если константа, то это начало выражения (возможно)
+                            //иначе просто идём на следующую итерацию
                         }
                     }
                 }
@@ -498,30 +623,53 @@ namespace CPPDE
                     LexemesIterator++;
                     CurrentLexeme = GetLexeme();
                     //должен быть идентификатор
-                    if (!char.IsLetter(CurrentLexeme.Value[0]) || ReservedWords.Contains(CurrentLexeme.Value) || Types.Contains(CurrentLexeme.Value))
+                    if (ReservedWords.Contains(CurrentLexeme.Value)) //кто додумается написать оператор внутри условий цикла?
+                    {
+                        try
+                        {
+                            throw new UnexpectedTokenException(CurrentLexeme.Line, CurrentLexeme.Value);
+                        }
+                        catch (SyntaxException e)
+                        {
+                            Console.WriteLine(e.Message);
+                            return null;
+                        }
+                    }
+
+
+                    if (!char.IsLetter(CurrentLexeme.Value[0])) //константа или выражение
                     {
                         int Line = CurrentLexeme.Line;
                         string Value = CurrentLexeme.Value;
-                        while (CurrentLexeme.Value != ";")
+                        try
                         {
-                            GoNext(0);
-                            CurrentLexeme = GetLexeme();
+                            //результат выражения не нужен ибо тут ничего не присваивается, ещё и объявление стоит
+                            ParseExpression();
+                            return OperationList;
                         }
-                        throw new UnexpectedTokenException(Line, Value);//плохо, идём до точки с запятой и кидаем исключение
+                        catch (SyntaxException e)
+                        {
+                            Console.WriteLine(e.Message);
+                            return OperationList; //что получилось, то и возвращаем
+                        }
+
                     }
                     else //если всё хорошо
                     {
                         VariableNode DecVar = new VariableNode(CurrentLexeme.Value, CurrentLexeme.Line);
                         OperationList.Add(new VariableDeclarationNode(DecVar, VarType, CurrentLexeme.Line));
                     }
+
                 }
+
                 //указатель стоит на первой переменной(или константе)
                 LexemesIterator++;
                 if (Operations.AssignmentOperations.Contains(GetLexeme().Value))
                 {
                     LexemesIterator--;//вернули на переменную
                     AssignmentOperator AssignOper = ParseAssignmentOperator();
-                    OperationList.Add(AssignOper);
+                    if (AssignOper!=null)
+                        OperationList.Add(AssignOper);
                 }
                 else
                 {
@@ -531,10 +679,9 @@ namespace CPPDE
                         AtomNode Expression = ParseExpression();
                         OperationList.Add(Expression);
                     }
-                    catch (SyntaxException)
+                    catch (SyntaxException e)
                     {
-                        while (!(GetLexeme().Value == ";"))
-                            ++LexemesIterator;
+                        Console.WriteLine(e.Message);
                     }
 
                 }

@@ -52,7 +52,9 @@
     <Compile Include="Models\Exceptions\SyntaxExceptions\SyntaxException.cs" />
     <Compile Include="Models\Exceptions\SyntaxExceptions\UnexpectedEOFException.cs" />
     <Compile Include="Models\Exceptions\SyntaxExceptions\UnexpectedTokenException.cs" />
-    <Compile Include="Models\Exceptions\SyntaxExceptions\UnmatchedBracketExpression.cs" />
+    <Compile Include="Models\Exceptions\SyntaxExceptions\UnexpectedEndOfExpressionException.cs" />
+    <Compile Include="Models\Exceptions\SyntaxExceptions\UnmatchedCloseBracketExpression.cs" />
+    <Compile Include="Models\Exceptions\SyntaxExceptions\UnmatchedOpenBracketsInExpresssion.cs" />
     <Compile Include="Models\IntermediateCodeNode.cs" />
     <Compile Include="Models\NodeClasses.cs" />
     <Compile Include="Models\SemanticFunctions.cs" />
