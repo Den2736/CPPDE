@@ -56,6 +56,7 @@
     <Compile Include="Models\Exceptions\SyntaxExceptions\UnmatchedCloseBracketExpression.cs" />
     <Compile Include="Models\Exceptions\SyntaxExceptions\UnmatchedOpenBracketsInExpresssion.cs" />
     <Compile Include="Models\IntermediateCodeNode.cs" />
+    <Compile Include="Models\LexicalParser.cs" />
     <Compile Include="Models\NodeClasses.cs" />
     <Compile Include="Models\SemanticFunctions.cs" />
     <Compile Include="Models\Variable.cs" />
@@ -69,7 +70,6 @@
     <Compile Include="Models\Exceptions\CompilerException.cs" />
     <Compile Include="Models\Exceptions\LexicalExceptions\LexicalException.cs" />
     <Compile Include="Models\Exceptions\LexicalExceptions\SourceNotFoundException.cs" />
-    <Compile Include="Models\Exceptions\LexicalExceptions\WrongIdentifierException.cs" />
     <Compile Include="Program.cs" />
     <Compile Include="Properties\AssemblyInfo.cs" />
   </ItemGroup>

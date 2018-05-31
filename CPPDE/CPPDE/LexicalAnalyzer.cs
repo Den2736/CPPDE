@@ -34,39 +34,17 @@ namespace CPPDE
                 int lineNumber = 0;
                 var lexemes = new Dictionary<int, IEnumerable<string>>();
 
-                var reWord = new Regex(@"\w");
                 foreach (var line in Content)
                 {
-                    var lineLexemes = new List<string>();
-                    var word = "";
-                    foreach (var sym in line)
+                    var lineLexemes = LexicalParser.GetLexemes(line);
+                    if (lineLexemes.Any())
                     {
-                        if (reWord.IsMatch(sym.ToString()))
-                        {
-                            word += sym;
-                        }
-                        else
-                        {
-                            if (!string.IsNullOrEmpty(word))
-                            {
-                                lineLexemes.Add(word);
-                                word = "";
-                            }
-
-                            if (!char.IsWhiteSpace(sym))
-                            {
-                                lineLexemes.Add(sym.ToString());
-                            }
-                        }
+                        lexemes.Add(++lineNumber, lineLexemes);
                     }
-
-                    if (!string.IsNullOrEmpty(word))
+                    else
                     {
-                        lineLexemes.Add(word);
-                        word = "";
+                        lineNumber++;
                     }
-
-                    lexemes.Add(++lineNumber, lineLexemes);
                 }
 
                 return lexemes;
