@@ -30,9 +30,9 @@ namespace C__DE.Models
                     if (!BlockVar.WasNewValueUsed)
                         throw new UnusedValueWarning(BlockVar.WasAssignedNewValue, BlockVar.Name);
                 }
-                catch (WarningMessage)
+                catch (WarningMessage e)
                 {
-
+                    Console.WriteLine(e.Message);
                 }
             }
         }
@@ -40,7 +40,6 @@ namespace C__DE.Models
 
     public abstract partial class AtomNode : Node
     {
-
     }
 
     public partial class ConstantNode : AtomNode
@@ -48,8 +47,11 @@ namespace C__DE.Models
         public override bool SemanticAnalysis()
         {
             IsSemanticCorrect = true;
+            MainVariable.IsConst = true;
+            MainVariable.Value = Value;
             return true;
         }
+
     }
 
     public partial class VariableNode : AtomNode
@@ -71,20 +73,48 @@ namespace C__DE.Models
             }
         }
 
+
     }
 
     public partial class BinaryOperatorNode : AtomNode //логический, сравнения или арифметический
     {
         public void CheckTypesAdd()//если оператор плюс или минус
         {
+            //bool IsConst = FirstOperand.MainVariable.IsConst && SecondOperand.MainVariable.IsConst;
             switch (FirstOperand.MainVariable.Type)
             {
                 case "int":
                     {
                         switch (SecondOperand.MainVariable.Type)
                         {
-                            case "int": { MainVariable.Type = "int"; break; }
-                            case "float": { MainVariable.Type = "float"; break; }
+                            case "int":
+                                {
+                                    MainVariable.Type = "int";
+                                    /*if (IsConst)
+                                    {
+                                        int first = int.Parse(FirstOperand.MainVariable.Value);
+                                        int second = int.Parse(SecondOperand.MainVariable.Value);
+                                        if (Value == "+")
+                                            MainVariable.Value = (first + second).ToString();
+                                        else //если минус
+                                            MainVariable.Value = (first - second).ToString();
+                                    }*/
+                                    break;
+                                }
+                            case "float":
+                                {
+                                    MainVariable.Type = "float";
+                                    /*if (IsConst)
+                                    {
+                                        float first = float.Parse(FirstOperand.MainVariable.Value);
+                                        float second = float.Parse(SecondOperand.MainVariable.Value);
+                                        if (Value == "+")
+                                            MainVariable.Value = (first + second).ToString();
+                                        else //если минус
+                                            MainVariable.Value = (first - second).ToString();
+                                    }*/
+                                    break;
+                                }
                             default: { throw new IncompatibleTypesException(LineNumber, "int", SecondOperand.MainVariable.Type); }
                         }
                         break;
@@ -93,8 +123,21 @@ namespace C__DE.Models
                     {
                         switch (SecondOperand.MainVariable.Type)
                         {
-                            case "int": { MainVariable.Type = "float"; break; }
-                            case "float": { MainVariable.Type = "float"; break; }
+                            case "int":
+                            case "float":
+                                {
+                                    MainVariable.Type = "float";
+                                    /*if (IsConst)
+                                    {
+                                        float first = float.Parse(FirstOperand.MainVariable.Value);
+                                        float second = float.Parse(SecondOperand.MainVariable.Value);
+                                        if (Value == "+")
+                                            MainVariable.Value = (first + second).ToString();
+                                        else //если минус
+                                            MainVariable.Value = (first - second).ToString();
+                                    }*/
+                                    break;
+                                }
                             default: { throw new IncompatibleTypesException(LineNumber, "int", SecondOperand.MainVariable.Type); }
                         }
                         break;
@@ -105,8 +148,13 @@ namespace C__DE.Models
                             throw new InvalidTypeException(LineNumber, "string", "-");
                         switch (SecondOperand.MainVariable.Type)
                         {
-                            case "string": { MainVariable.Type = "string"; break; }
-                            case "char": { MainVariable.Type = "string"; break; }
+                            case "string":
+                            case "char": {
+                                    MainVariable.Type = "string";
+                                    //if (IsConst)
+                                       // MainVariable.Value = FirstOperand.MainVariable.Value + SecondOperand.MainVariable.Value;
+                                    break;
+                                }
                             default: { throw new IncompatibleTypesException(LineNumber, "string", SecondOperand.MainVariable.Type); }
                         }
                         break;
@@ -117,8 +165,13 @@ namespace C__DE.Models
                             throw new InvalidTypeException(LineNumber, "string", "-");
                         switch (SecondOperand.MainVariable.Type)
                         {
-                            case "string": { MainVariable.Type = "string"; break; }
-                            case "char": { MainVariable.Type = "string"; break; }
+                            case "string":
+                            case "char": {
+                                    MainVariable.Type = "string";
+                                    //if (IsConst)
+                                      //  MainVariable.Value = FirstOperand.MainVariable.Value + SecondOperand.MainVariable.Value;
+                                    break;
+                                }
                             default: { throw new IncompatibleTypesException(LineNumber, "string", SecondOperand.MainVariable.Type); }
                         }
                         break;
@@ -132,14 +185,105 @@ namespace C__DE.Models
 
         public void CheckTypesMul() //умножение и деление
         {
+            //bool IsConst = FirstOperand.MainVariable.IsConst && SecondOperand.MainVariable.IsConst;
             switch (FirstOperand.MainVariable.Type)
             {
                 case "int":
                     {
                         switch (SecondOperand.MainVariable.Type)
                         {
-                            case "int": { MainVariable.Type = "int"; break; }
-                            case "float": { MainVariable.Type = "float"; break; }
+                            case "int":
+                                {
+                                    MainVariable.Type = "int";
+                                    /*if (IsConst)
+                                    {
+                                        int first = int.Parse(FirstOperand.MainVariable.Value);
+                                        int second = int.Parse(SecondOperand.MainVariable.Value);
+                                        switch (Value)
+                                        {
+                                            case ("*"):
+                                                {
+                                                    MainVariable.Value = (first * second).ToString();
+                                                    break;
+                                                }
+                                            case ("/"):
+                                                {
+                                                    try
+                                                    {
+                                                        if (second == 0)
+                                                            throw new DividingByZeroWarning(LineNumber);
+                                                        MainVariable.Value = (first / second).ToString();
+                                                    }
+                                                    catch (WarningMessage e)
+                                                    {
+                                                        Console.WriteLine(e.Message);
+                                                    }
+                                                    break;
+                                                }
+                                            case ("%"):
+                                                {
+                                                    try
+                                                    {
+                                                        if (second == 0)
+                                                            throw new DividingByZeroWarning(LineNumber);
+                                                        MainVariable.Value = (first / second).ToString();
+                                                    }
+                                                    catch (WarningMessage e)
+                                                    {
+                                                        Console.WriteLine(e.Message);
+                                                    }
+                                                    break;
+                                                }
+                                        }
+                                    }*/
+                                    break;
+                                }
+                            case "float":
+                                {
+                                    MainVariable.Type = "float";
+                                    /*if (IsConst)
+                                    {
+                                        float first = float.Parse(FirstOperand.MainVariable.Value);
+                                        float second = float.Parse(SecondOperand.MainVariable.Value);
+                                        switch (Value)
+                                        {
+                                            case ("*"):
+                                                {
+                                                    MainVariable.Value = (first * second).ToString();
+                                                    break;
+                                                }
+                                            case ("/"):
+                                                {
+                                                    try
+                                                    {
+                                                        if (second == 0)
+                                                            throw new DividingByZeroWarning(LineNumber);
+                                                        MainVariable.Value = (first / second).ToString();
+                                                    }
+                                                    catch (WarningMessage e)
+                                                    {
+                                                        Console.WriteLine(e.Message);
+                                                    }
+                                                    break;
+                                                }
+                                            case ("%"):
+                                                {
+                                                    try
+                                                    {
+                                                        if (second == 0)
+                                                            throw new DividingByZeroWarning(LineNumber);
+                                                        MainVariable.Value = (first / second).ToString();
+                                                    }
+                                                    catch (WarningMessage e)
+                                                    {
+                                                        Console.WriteLine(e.Message);
+                                                    }
+                                                    break;
+                                                }
+                                        }
+                                    }*/
+                                    break;
+                                }
                             default: { throw new IncompatibleTypesException(LineNumber, "int", SecondOperand.MainVariable.Type); }
                         }
                         break;
@@ -148,8 +292,53 @@ namespace C__DE.Models
                     {
                         switch (SecondOperand.MainVariable.Type)
                         {
-                            case "int": { MainVariable.Type = "float"; break; }
-                            case "float": { MainVariable.Type = "float"; break; }
+                            case "int":
+                            case "float":
+                                {
+                                    MainVariable.Type = "float";
+                                    /*if (IsConst)
+                                    {
+                                        float first = float.Parse(FirstOperand.MainVariable.Value);
+                                        float second = float.Parse(SecondOperand.MainVariable.Value);
+                                        switch (Value)
+                                        {
+                                            case ("*"):
+                                                {
+                                                    MainVariable.Value = (first * second).ToString();
+                                                    break;
+                                                }
+                                            case ("/"):
+                                                {
+                                                    try
+                                                    {
+                                                        if (second == 0)
+                                                            throw new DividingByZeroWarning(LineNumber);
+                                                        MainVariable.Value = (first / second).ToString();
+                                                    }
+                                                    catch (WarningMessage e)
+                                                    {
+                                                        Console.WriteLine(e.Message);
+                                                    }
+                                                    break;
+                                                }
+                                            case ("%"):
+                                                {
+                                                    try
+                                                    {
+                                                        if (second == 0)
+                                                            throw new DividingByZeroWarning(LineNumber);
+                                                        MainVariable.Value = (first / second).ToString();
+                                                    }
+                                                    catch (WarningMessage e)
+                                                    {
+                                                        Console.WriteLine(e.Message);
+                                                    }
+                                                    break;
+                                                }
+                                        }
+                                    }*/
+                                    break;
+                                }
                             default: { throw new IncompatibleTypesException(LineNumber, "float", SecondOperand.MainVariable.Type); }
                         }
                         break;
@@ -165,7 +354,127 @@ namespace C__DE.Models
             if (((type1 == "int" || type1 == "float") && (type2 == "int" || type2 == "float"))//если оба числа
                 || ((type1 == "char" || type1 == "string") && (type2 == "char" || type2 == "string"))//или оба строковые
                 || (type1 == "bool" && type2 == "bool"))
+            {
                 MainVariable.Type = "bool";
+                bool IsConst = FirstOperand.MainVariable.IsConst && SecondOperand.MainVariable.IsConst;
+                /*if (IsConst)
+                {
+                    if (type1=="int" || type1=="float")
+                    {
+                        float first = float.Parse(FirstOperand.MainVariable.Value);
+                        float second = float.Parse(SecondOperand.MainVariable.Value);
+                        switch (Value)
+                        {
+                            case (">"):
+                                {
+                                    MainVariable.Value = (first > second).ToString();
+                                    break;
+                                }
+                            case (">="):
+                                {
+                                    MainVariable.Value = (first >= second).ToString();
+                                    break;
+                                }
+                            case ("<"):
+                                {
+                                    MainVariable.Value = (first < second).ToString();
+                                    break;
+                                }
+                            case ("<="):
+                                {
+                                    MainVariable.Value = (first <= second).ToString();
+                                    break;
+                                }
+                            case ("=="):
+                                {
+                                    MainVariable.Value = (first == second).ToString();
+                                    break;
+                                }
+                            case ("!="):
+                                {
+                                    MainVariable.Value = (first != second).ToString();
+                                    break;
+                                }
+                        }
+                    }
+                    else if (type1=="char" || type1=="string")
+                    {
+                        string first = FirstOperand.MainVariable.Value;
+                        string second = SecondOperand.MainVariable.Value;
+                        switch (Value)
+                        {
+                            case (">"):
+                                {
+                                    MainVariable.Value = (String.Compare(first,second)>0).ToString();
+                                    break;
+                                }
+                            case (">="):
+                                {
+                                    MainVariable.Value = (String.Compare(first, second) >= 0).ToString();
+                                    break;
+                                }
+                            case ("<"):
+                                {
+                                    MainVariable.Value = (String.Compare(first, second)<0).ToString();
+                                    break;
+                                }
+                            case ("<="):
+                                {
+                                    MainVariable.Value = (String.Compare(first, second) <= 0).ToString();
+                                    break;
+                                }
+                            case ("=="):
+                                {
+                                    MainVariable.Value = (String.Equals(first, second)).ToString();
+                                    break;
+                                }
+                            case ("!="):
+                                {
+                                    MainVariable.Value = (!String.Equals(first, second)).ToString();
+                                    break;
+                                }
+                        }
+                    }
+                    else //иначе булевский
+                    {
+                        bool first = bool.Parse(FirstOperand.MainVariable.Value);
+                        bool second = bool.Parse(SecondOperand.MainVariable.Value);
+                        switch (Value)
+                        {
+                            case (">"):
+                                {
+                                    MainVariable.Value = (first && !second).ToString();
+                                    break;
+                                }
+                            case (">="):
+                                {
+                                    MainVariable.Value = (first).ToString();
+                                    break;
+                                }
+                            case ("<"):
+                                {
+                                    MainVariable.Value = (!first && second).ToString();
+                                    break;
+                                }
+                            case ("<="):
+                                {
+                                    MainVariable.Value = (second).ToString();
+                                    break;
+                                }
+                            case ("=="):
+                                {
+                                    MainVariable.Value = ((first && second) || (!first && !second)).ToString();
+                                    break;
+                                }
+                            case ("!="):
+                                {
+                                    MainVariable.Value = ((!first && second) || (first && !second)).ToString();
+                                    break;
+                                }
+                        }
+                    }
+                }*/
+            }
             else throw new IncompatibleTypesException(LineNumber, type1, type2);
         }
 
@@ -291,6 +600,7 @@ namespace C__DE.Models
                 }
             }
         }
+
     }
 
     public partial class VariableDeclarationNode : AtomNode

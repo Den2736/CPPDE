@@ -59,6 +59,7 @@
     <Compile Include="Models\NodeClasses.cs" />
     <Compile Include="Models\SemanticFunctions.cs" />
     <Compile Include="Models\Variable.cs" />
+    <Compile Include="Models\Warnings\DividingByZeroWarning.cs" />
     <Compile Include="Models\Warnings\UnusedValueWarning.cs" />
     <Compile Include="Models\Warnings\UnusedVariableWarning.cs" />
     <Compile Include="Models\Warnings\WarningMessage.cs" />

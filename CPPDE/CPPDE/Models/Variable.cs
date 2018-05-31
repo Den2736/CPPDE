@@ -22,6 +22,10 @@ namespace C__DE.Models
         public bool WasUsed { get; set; }
         //было ли присвоено переменной значение
         public bool WasIdentified { get; set; }
+        //является ли значение константным в данный момент
+        public bool IsConst { get; set; }
+        //значение переменной (если константное)
+        public string Value;
 
         //--------Для предупреждений
 

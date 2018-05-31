@@ -23,7 +23,7 @@ namespace C__DE.Models
         public static List<string> ArithmeticOperations = new List<string> { "+", "-", "*", "/", "%" };
         public static List<string> BitOperations = new List<string> { "&", "|", "^" };
         public static List<string> ComparationOperations = new List<string> { "==", "!=", ">", "<", "<=", ">=" };
-        public static List<string> AssignmentOperations = new List<string> { "=", "+=", "-=", "*=", "/=", "%=", "&&=", "||+"};
+        public static List<string> AssignmentOperations = new List<string> { "=", "+=", "-=", "*=", "/=", "%=", "&&=", "||="};
     }
 
     public enum NodeType
