@@ -11,10 +11,11 @@ namespace C__DE.Models
     {
         private static string Word { get; set; }
         private static string Operator { get; set; }
-        private static readonly string[] ComplicatedOperators = { "+=", "-=", "++", "--", "&&", "||" };
         private static List<string> LineLexemes { get; set; }
-        private static readonly Regex ReWord = new Regex(@"\w");
         private static bool NeedToStoreSym { get; set; }
+
+        private static readonly string[] ComplicatedOperators = { "+=", "-=", "*=", "/=", "%=", "&&=", "||=", "++", "--", "&&", "||" };
+        private static readonly Regex ReWord = new Regex(@"\w");
 
         public static IEnumerable<string> GetLexemes(string line)
         {
@@ -65,7 +66,7 @@ namespace C__DE.Models
         }
         private static bool IsPartOfAnOperator(char sym)
         {
-            return ComplicatedOperators.Any(o => o.StartsWith(sym.ToString()));
+            return ComplicatedOperators.Any(o => o.StartsWith(sym.ToString()) || o.StartsWith(Operator + sym));
         }
 
         private static void StoreWordIfNotNull()
