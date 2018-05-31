@@ -512,8 +512,9 @@ namespace C__DE.Models
                 if (!FirstOperand.MainVariable.WasIdentified)
                     throw new UnidentifiedVariableException(FirstOperand.LineNumber, FirstOperand.MainVariable.Name);
             }
-            catch (SemanticException)
+            catch (SemanticException e)
             {
+                Console.WriteLine(e.Message);
                 IsSemanticCorrect = false;
             }
 
@@ -552,8 +553,9 @@ namespace C__DE.Models
                     if (!SecondOperand.MainVariable.WasIdentified)
                         throw new UnidentifiedVariableException(SecondOperand.LineNumber, SecondOperand.MainVariable.Name);
                 }
-                catch (SemanticException)
+                catch (SemanticException e)
                 {
+                    Console.WriteLine(e.Message);
                     IsSemanticCorrect = false;
                 }
                 if (IsSemanticCorrect)
@@ -587,8 +589,9 @@ namespace C__DE.Models
                         }
                         return true;
                     }
-                    catch (SemanticException)
+                    catch (SemanticException e)
                     {
+                        Console.WriteLine(e.Message);
                         IsSemanticCorrect = false;
                         return false;
                     }
@@ -611,7 +614,9 @@ namespace C__DE.Models
             MainVariable.Name = DeclaratedVariable.Value;
             MainVariable.AlternativeName = "var_" + Counters.vars.ToString();
             MainVariable.IsDeclared = true;
+            MainVariable.DeclaredLine = LineNumber;
             MainVariable.Type = Type;
+            MainVariable.WasIdentified = false;
             Counters.vars++;
 
             //нужно посмотреть повторное объявление
@@ -627,10 +632,12 @@ namespace C__DE.Models
                 parentBlock.BlockVariables.Add(MainVariable); //помещаем в список переменных данного блока
                 IsSemanticCorrect = true;
             }
-            catch (SemanticException)
+            catch (SemanticException e)
             {
+                Console.WriteLine(e.Message);
                 IsSemanticCorrect = false; //плохо
             }
+
             DeclaratedVariable.SemanticAnalysis();
             return IsSemanticCorrect;
         }
@@ -646,8 +653,9 @@ namespace C__DE.Models
             {
                 IsSemanticCorrect &= Condition.SemanticAnalysis();
             }
-            catch (SemanticException)
+            catch (SemanticException e)
             {
+                Console.WriteLine(e.Message);
                 IsSemanticCorrect = false;
             }
  
@@ -666,8 +674,9 @@ namespace C__DE.Models
                 {
                     IsSemanticCorrect = ElseBranch.SemanticAnalysis();
                 }
-                catch (SemanticException)
+                catch (SemanticException e)
                 {
+                    Console.WriteLine(e.Message);
                     IsSemanticCorrect = false;
                 }
             }
@@ -690,8 +699,9 @@ namespace C__DE.Models
                 {
                     IsSemanticCorrect &= oper.SemanticAnalysis();
                 }
-                catch (SemanticException)
+                catch (SemanticException e)
                 {
+                    Console.WriteLine(e.Message);
                     IsSemanticCorrect = false;
                 }
             }
@@ -712,8 +722,9 @@ namespace C__DE.Models
                     {
                         IsSemanticCorrect &= Act.SemanticAnalysis();
                     }
-                    catch (SemanticException)
+                    catch (SemanticException e)
                     {
+                        Console.WriteLine(e.Message);
                         IsSemanticCorrect = false;
                     }
                 }
@@ -727,8 +738,9 @@ namespace C__DE.Models
                     {
                         IsSemanticCorrect &= ContinueCondition.SemanticAnalysis();
                     }
-                    catch (SemanticException)
+                    catch (SemanticException e)
                     {
+                        Console.WriteLine(e.Message);
                         IsSemanticCorrect = false;
                     }
                 }
@@ -740,8 +752,9 @@ namespace C__DE.Models
                 {
                     IsSemanticCorrect &= IterationActivity.SemanticAnalysis();
                 }
-                catch (SemanticException)
+                catch (SemanticException e)
                 {
+                    Console.WriteLine(e.Message);
                     IsSemanticCorrect = false;
                 }
             }
@@ -752,8 +765,9 @@ namespace C__DE.Models
                 {
                     IsSemanticCorrect &= oper.SemanticAnalysis();
                 }
-                catch (SemanticException)
+                catch (SemanticException e)
                 {
+                    Console.WriteLine(e.Message);
                     IsSemanticCorrect = false;
                 }
             }
@@ -764,8 +778,9 @@ namespace C__DE.Models
                 {
                     IsSemanticCorrect &= ContinueCondition.SemanticAnalysis();
                 }
-                catch (SemanticException)
+                catch (SemanticException e)
                 {
+                    Console.WriteLine(e.Message);
                     IsSemanticCorrect = false;
                 }
             }
@@ -934,8 +949,9 @@ namespace C__DE.Models
                 AssignedVariable.MainVariable.WasAssignedNewValue = LineNumber;
                 AssignedVariable.MainVariable.WasUsed = true;
             }
-            catch(SemanticException)
+            catch(SemanticException e)
             {
+                Console.WriteLine(e.Message);
                 IsSemanticCorrect = false;
             }
 
@@ -943,8 +959,9 @@ namespace C__DE.Models
             {
                 IsSemanticCorrect &= RightPart.SemanticAnalysis();
             }
-            catch (SemanticException)
+            catch (SemanticException e)
             {
+                Console.WriteLine(e.Message);
                 IsSemanticCorrect = false;
             }
 
@@ -985,8 +1002,9 @@ namespace C__DE.Models
                     }
                     return true; //если всё хорошо, то true
                 }
-                catch (SemanticException)
+                catch (SemanticException e)
                 {
+                    Console.WriteLine(e.Message);
                     IsSemanticCorrect = false;
                     return false;
                 }
@@ -1006,8 +1024,9 @@ namespace C__DE.Models
                 {
                     IsSemanticCorrect &= oper.SemanticAnalysis();
                 }
-                catch (SemanticException)
+                catch (SemanticException e)
                 {
+                    Console.WriteLine(e.Message);
                     IsSemanticCorrect = false;
                 }
             }
@@ -1028,8 +1047,9 @@ namespace C__DE.Models
                 ReadVariable.MainVariable.WasUsed = true;
                 ReadVariable.MainVariable.WasAssignedNewValue = LineNumber;
             }
-            catch (SemanticException)
+            catch (SemanticException e)
             {
+                Console.WriteLine(e.Message);
                 IsSemanticCorrect = false;
             }
             return IsSemanticCorrect;
@@ -1048,8 +1068,9 @@ namespace C__DE.Models
                 if (!WriteVariable.MainVariable.WasIdentified)
                     throw new UnidentifiedVariableException(WriteVariable.LineNumber, WriteVariable.MainVariable.Name);
             }
-            catch (SemanticException)
+            catch (SemanticException e)
             {
+                Console.WriteLine(e.Message);
                 IsSemanticCorrect = false;
             }
             return IsSemanticCorrect;

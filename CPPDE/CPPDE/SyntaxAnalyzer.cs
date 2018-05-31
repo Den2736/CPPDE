@@ -115,6 +115,7 @@ namespace CPPDE
                 {
                     BlockNode EmbeddedNode = NodesStack.Pop();
                     NodesStack.Peek().AddOperator(EmbeddedNode);
+                    
                 }
             }
 
@@ -340,6 +341,8 @@ namespace CPPDE
                             //и бросаем исключение
                             throw new UnexpectedTokenException(CurrentLexeme.Line, CurrentLexeme.Value);
                         }
+                        GoNext(0);
+                        throw new UnexpectedTokenException(CurrentLexeme.Line, CurrentLexeme.Value);
                     }
 
                     else //если всё хорошо, идём дальше по выражению
@@ -468,7 +471,7 @@ namespace CPPDE
 
                         else //если что-то другое, то ошибка (по идее ничего другого быть не должно, но на всякий случай)
                         {
-                            GoNext(brackets);
+                            //GoNext(brackets);
                             throw new UnexpectedTokenException(CurrentLexeme.Line, CurrentLexeme.Value);
                         }
 
@@ -803,6 +806,14 @@ namespace CPPDE
                 catch (SyntaxException e)
                 {
                     Console.WriteLine(e.Message);
+                    Lexeme TempLexeme = GetLexeme();
+                    while (TempLexeme.Value != ")" && TempLexeme.Value != "{")
+                    {
+                        GoNext(0);
+                        TempLexeme = GetLexeme();
+                    }
+                    if (TempLexeme.Value == ")")
+                        GetConcreteLexeme(")");
                 }
                 //создали узел
                 CycleOperator NewCycle = new CycleOperator(true, CycleCondition, GetLexeme().Line);
@@ -868,9 +879,56 @@ namespace CPPDE
                     NodesStack.Peek().AddOperator(Cycle);
                     return;
                 }
-                GetConcreteLexeme("(");
-                AtomNode Exp = ParseExpression();
-                GetConcreteLexeme(")");
+                try
+                {
+                    GetConcreteLexeme("(");
+                }
+                catch (SyntaxException e)
+                {
+                    Console.WriteLine(e.Message);
+                }
+
+                AtomNode Exp;
+                try
+                {
+                    Exp= ParseExpression();
+                }
+                catch (SyntaxException e)
+                {
+                    Console.WriteLine(e.Message);
+                    Exp = new ConstantNode("bool", "true", GetLexeme().Line);
+                }
+
+                try
+                {
+                    GetConcreteLexeme(")");
+                }
+                catch (SyntaxException e)
+                {
+                    Console.WriteLine(e.Message);
+                    Lexeme TempLexeme = GetLexeme();
+                    while (TempLexeme.Value != ")" && TempLexeme.Value != "}")
+                    {
+                        GoNext(0);
+                        TempLexeme = GetLexeme();
+                        if (TempLexeme.Value != ")" && TempLexeme.Value != "}")
+                            LexemesIterator++;
+                    }
+                    if (TempLexeme.Value == ")")
+                        GetConcreteLexeme(")");
+                    else
+                    {
+                        if (NodesStack.Count == 2)
+                            try
+                            {
+                                throw new UnexpectedTokenException(GetLexeme().Line, "}");
+                            }
+                            catch(SyntaxException e1)
+                            {
+                                Console.WriteLine(e1.Message);
+                            }
+                    }
+                }
 
                 NodesStack.Pop();
                 CycleOperator NewCycle = new CycleOperator(false, Exp, numline);
@@ -941,6 +999,16 @@ namespace CPPDE
                 catch (SyntaxException e)
                 {
                     Console.WriteLine(e.Message);
+                    Lexeme TempLexeme = GetLexeme();
+                    while (TempLexeme.Value != ")" && TempLexeme.Value != "{")
+                    {
+                        GoNext(0);
+                        TempLexeme = GetLexeme();
+                        if (TempLexeme.Value != ")" && TempLexeme.Value != "{")
+                            LexemesIterator++;
+                    }
+                    if (TempLexeme.Value == ")")
+                        GetConcreteLexeme(")");
                 }
 
                 CycleOperator NewCycle = new CycleOperator(BeginAction, Expression, PostAction, GetLexeme().Line);
@@ -995,11 +1063,20 @@ namespace CPPDE
                         Console.WriteLine(e.Message);
                     }
                     CurrentLexeme = GetLexeme();
-                    if (ReservedWords.Contains(CurrentLexeme.Value) || !char.IsLetter(CurrentLexeme.Value[0]) || Types.Contains(CurrentLexeme.Value))
-                        throw new UnexpectedTokenException(CurrentLexeme.Line, CurrentLexeme.Value);
-                    ReadVar = new VariableNode(CurrentLexeme.Value, CurrentLexeme.Line);
-                    NodesStack.Peek().AddOperator(new ReadOperator(ReadVar, CurrentLexeme.Line));
-                    LexemesIterator++;
+                    try
+                    {
+                        if (ReservedWords.Contains(CurrentLexeme.Value) || !char.IsLetter(CurrentLexeme.Value[0]) || Types.Contains(CurrentLexeme.Value))
+                            throw new UnexpectedTokenException(CurrentLexeme.Line, CurrentLexeme.Value);
+                        ReadVar = new VariableNode(CurrentLexeme.Value, CurrentLexeme.Line);
+                        LexemesIterator++;
+                        NodesStack.Peek().AddOperator(new ReadOperator(ReadVar, CurrentLexeme.Line));
+                        CurrentLexeme = GetLexeme();
+                    }
+                    catch(SyntaxException e)
+                    {
+                        Console.WriteLine(e.Message);
+                        LexemesIterator++;
+                    }
                     CurrentLexeme = GetLexeme();
                 }
                 try
@@ -1067,7 +1144,6 @@ namespace CPPDE
                         Exp = new ConstantNode("string", "", GetLexeme().Line);
                     }
                     NodesStack.Peek().AddOperator(new WriteOperator(Exp, CurrentLexeme.Line));
-                    LexemesIterator++;
                     CurrentLexeme = GetLexeme();
                 }
 
@@ -1120,13 +1196,18 @@ namespace CPPDE
                     {
                         AssignmentOperator AssignOp = ParseAssignmentOperator();
                         NodesStack.Peek().AddOperator(AssignOp);
-                        GetConcreteLexeme(";");
+                        if (GetLexeme().Value==";")
+                            GetConcreteLexeme(";");
                     }
                     else if (char.IsLetterOrDigit(CurrentLexeme.Value[0]) || CurrentLexeme.Value[0]=='\"' || CurrentLexeme.Value[0] == '\'' || CurrentLexeme.Value=="(")
                     {
                         AtomNode Exp = ParseExpression();
                         NodesStack.Peek().AddOperator(Exp);
                         GetConcreteLexeme(";");
+                    }
+                    else if (CurrentLexeme.Value=="}")
+                    {
+                        return;
                     }
                     else
                     {
@@ -1137,8 +1218,8 @@ namespace CPPDE
                 catch (SyntaxException e)
                 {
                     Console.WriteLine(e.Message);
+                    LexemesIterator++;
                 }
-                LexemesIterator++;
                 if (LexemesIterator == LexemsForSyntaxAnalysis.Count)
                     return;
             }
@@ -1155,8 +1236,9 @@ namespace CPPDE
                     while (LexemesIterator < LexemsForSyntaxAnalysis.Count)
                         GetNextOperator();
                 }
-                catch(UnexpectedEOFException)//все остальные иключения должны отлавливаться выше по рекурсии
+                catch(UnexpectedEOFException e)//все остальные иключения должны отлавливаться выше по рекурсии
                 {
+                    Console.WriteLine(e.Message);
                     HandleEOFException();
                 }
                 Root = root;
