@@ -41,6 +41,10 @@ namespace CPPDE
                     {
                         lexemes.Add(++lineNumber, lineLexemes);
                     }
+                    else
+                    {
+                        lineNumber++;
+                    }
                 }
 
                 return lexemes;
