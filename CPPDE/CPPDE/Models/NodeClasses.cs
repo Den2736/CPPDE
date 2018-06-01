@@ -4,6 +4,7 @@ using System.Collections.Generic;
 using System.Linq;
 using System.Text;
 using System.Threading.Tasks;
+using static CPPDE.Program;
 
 namespace C__DE.Models
 {
@@ -15,15 +16,6 @@ namespace C__DE.Models
         public static int temps = 0; //счётчики для переменных, констант и временных ячеек
         public static int ifs = 0;
         public static int cycles = 0;
-    }
-
-    public static class Operations
-    {
-        public static List<string> LogicalOperations = new List<string> { "&&", "||", "!" };
-        public static List<string> ArithmeticOperations = new List<string> { "+", "-", "*", "/", "%" };
-        public static List<string> BitOperations = new List<string> { "&", "|", "^" };
-        public static List<string> ComparationOperations = new List<string> { "==", "!=", ">", "<", "<=", ">=" };
-        public static List<string> AssignmentOperations = new List<string> { "=", "+=", "-=", "*=", "/=", "%=", "&&=", "||="};
     }
 
     public enum NodeType
@@ -280,11 +272,21 @@ namespace C__DE.Models
             LineNumber = numLine;
         }
 
+        public AssignmentOperator(VariableNode Var, string Operation, int numLine)//для ++ и --
+        {
+            AssignedVariable = Var;
+            RightPart = null;
+            TypeOfNode = NodeType.AssignmentOperator;
+            AssignmentOperation = Operation;
+            LineNumber = numLine;
+        }
+
         public override void SetParentBlock(BlockNode Parent)
         {
             parentBlock = Parent;
             AssignedVariable.SetParentBlock(Parent);
-            RightPart.SetParentBlock(Parent);
+            if (RightPart!=null)
+                RightPart.SetParentBlock(Parent);
         }
 
     }

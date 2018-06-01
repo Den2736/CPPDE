@@ -23,6 +23,14 @@ namespace CPPDE
             public string Value;
         }
 
+        public static class Operations//все возможные операции
+        {
+            public static List<string> LogicalOperations = new List<string> { "&&", "||", "!" };
+            public static List<string> ArithmeticOperations = new List<string> { "+", "-", "*", "/", "%" };
+            public static List<string> BitOperations = new List<string> { "&", "|", "^" };
+            public static List<string> ComparationOperations = new List<string> { "==", "!=", ">", "<", "<=", ">=" };
+            public static List<string> AssignmentOperations = new List<string> { "=", "+=", "-=", "*=", "/=", "%=", "&&=", "||=", "++","--"};
+        }
 
         //----------------------------------------------------------------
         public static class SyntaxAnalyzer
@@ -108,7 +116,7 @@ namespace CPPDE
                 else throw new ExpectedAnotherSymbolException(lex, LexemsForSyntaxAnalysis.Last().Line, "end of file");
             }
 
-            //обработка исключения "Неожиданный конец файла" - все операторы "складываются"
+            //обработка исключения "Неожиданный конец файла" - все операторы "складываются" как матрёшка
             public static void HandleEOFException()
             {
                 while (NodesStack.Count!=1)
@@ -500,6 +508,9 @@ namespace CPPDE
                     throw new UnexpectedTokenException(CurrentLexeme.Line, CurrentLexeme.Value);
                 }
                 LexemesIterator++;
+                if (CurrentLexeme.Value == "++" || CurrentLexeme.Value == "--")
+                    return new AssignmentOperator(AssignedVariable, CurrentLexeme.Value, CurrentLexeme.Line);
+                //если другой, то дальше должно быть выражение
                 try
                 {
                     AtomNode Expression = ParseExpression();
@@ -532,24 +543,25 @@ namespace CPPDE
                         int Line = CurrentLexeme.Line;
                         string Value = CurrentLexeme.Value;
                         //что делать, если пользователь написал фигню?
-                        while (CurrentLexeme.Value!=";" && CurrentLexeme.Value!=",") //может, тут ещё фигурные скобки добавить?
-                        {
-                            LexemesIterator++;
-                            GoNext(0);
-                            CurrentLexeme = GetLexeme();
-                        }
                         try
                         {
-                            throw new UnexpectedTokenException(Line, Value);//плохо, идём до точки с запятой и кидаем исключение
+                            throw new UnexpectedTokenException(Line, Value);//кидаем исключение
                         }
-                        catch(SyntaxException e)
+                        catch(SyntaxException e)//тут же его ловим
                         {
                             Console.WriteLine(e.Message);
                             //если дошли до конца оператора
-                            if (CurrentLexeme.Value == ";")
+                            if (CurrentLexeme.Value == ";") //дошли до точки с запятой - на выход
+                            {
+                                GetConcreteLexeme(";");
                                 return;//то на выход
+                            }
+                            else if (CurrentLexeme.Value==",")
+                                GetConcreteLexeme(","); //если запятая, то идём дальше по этому же оператору
                             else
-                                GetConcreteLexeme(","); //если конец файла, он отловится позже, в главном парсере
+                            {
+                                return; //если что-то другое - выходим, там дальше другие функции разберутся
+                            }
                         }
                     }
                     else //если всё хорошо
@@ -637,7 +649,7 @@ namespace CPPDE
                         catch (SyntaxException e)
                         {
                             Console.WriteLine(e.Message);
-                            return OperationList;
+                            return OperationList;//будем парсить ЭТОТ оператор
                         }
                     }
 
@@ -649,7 +661,7 @@ namespace CPPDE
                         try
                         {
                             //результат выражения не нужен ибо тут ничего не присваивается, ещё и объявление стоит
-                            ParseExpression();
+                            OperationList.Add(ParseExpression());
                             //даже если парсинг выражения неудачный, то остановимся на разделителе
                             return OperationList;
                         }
@@ -676,6 +688,7 @@ namespace CPPDE
                     AssignmentOperator AssignOper = ParseAssignmentOperator();
                     if (AssignOper!=null)
                         OperationList.Add(AssignOper);
+                    
                 }
                 else
                 {
@@ -707,17 +720,19 @@ namespace CPPDE
                 catch (SyntaxException e)
                 {
                     Console.WriteLine(e.Message);
+                    if (ReservedWords.Contains(GetLexeme().Value) || Types.Contains(GetLexeme().Value))
+                        return;
                 }
                 Lexeme CurrentLexeme = GetLexeme();
-                if (ReservedWords.Contains(CurrentLexeme.Value) && CurrentLexeme.Value!="else")
-                    return; //начинаем разбор нового оператора
+
                 try
                 { 
-                    ConditionExpression = ParseExpression();
+                    ConditionExpression = ParseExpression();//тут только выражение, никаких объявления и присваиваний
                 }
                 catch (SyntaxException e)
                 {
                     Console.WriteLine(e.Message);
+                    //если парсинг неудачный, по умолчанию true
                     ConditionExpression = new ConstantNode("bool", "true",GetLexeme().Line);
                 }
 
@@ -728,13 +743,34 @@ namespace CPPDE
                 catch (SyntaxException e)
                 {
                     Console.WriteLine(e.Message);
+                    //даже если пропущена скобка, идём дальше
                 }
                 //создаём ветку if
                 CurrentLexeme = GetLexeme();
                 ConditionalBranchNode IfBranch = new ConditionalBranchNode(CurrentLexeme.Line);
                 NodesStack.Push(IfBranch);
-
-                if (CurrentLexeme.Value != "{")//то там один оператор
+                //а если лишние скобки?
+                while (CurrentLexeme.Value==")" || OperationPriorities.Keys.Contains(CurrentLexeme.Value))
+                {
+                    if (CurrentLexeme.Value==")")
+                        LexemesIterator++;
+                    else
+                    {
+                        LexemesIterator++;
+                        try
+                        {
+                            ParseExpression();
+                        }
+                        catch (SyntaxException e)//надо ли тут выводить?
+                        {
+                            Console.WriteLine(e.Message);
+                        }
+                    }
+                    CurrentLexeme = GetLexeme();
+                }
+                
+                //теперь можно парсить дальше
+                if (CurrentLexeme.Value != "{" && CurrentLexeme.Value !="else")//то там один оператор
                     GetNextOperator();
                 else if (CurrentLexeme.Value!="else")
                 {
@@ -755,6 +791,7 @@ namespace CPPDE
                     NodesStack.Push(ElseBranch); //ещё одна ветка
                     LexemesIterator++;
                     CurrentLexeme = GetLexeme();
+                    //аналогично ветке if
                     if (CurrentLexeme.Value != "{")//то там один оператор
                         GetNextOperator();
                     else
@@ -773,7 +810,7 @@ namespace CPPDE
                 }
                 //если ветки else нет, то создаём с одной веткой
                 NodesStack.Peek().AddOperator(new ConditionalOperatorNode(ConditionExpression, numLine, IfBranch));
-                NodesStack.Pop();
+                NodesStack.Pop();//собрали в кучу
             }
 
             //разбор цикла с предусловием
@@ -787,6 +824,8 @@ namespace CPPDE
                 catch (SyntaxException e)
                 {
                     Console.WriteLine(e.Message);
+                    if (ReservedWords.Contains(GetLexeme().Value) || Types.Contains(GetLexeme().Value))
+                        return;
                 }
                 AtomNode CycleCondition;
                 try
@@ -796,7 +835,7 @@ namespace CPPDE
                 catch (SyntaxException e)
                 {
                     Console.WriteLine(e.Message);
-                    CycleCondition = new ConstantNode("bool", "false", GetLexeme().Line);
+                    CycleCondition = new ConstantNode("bool", "true", GetLexeme().Line);
                 }
 
                 try
@@ -806,20 +845,34 @@ namespace CPPDE
                 catch (SyntaxException e)
                 {
                     Console.WriteLine(e.Message);
-                    Lexeme TempLexeme = GetLexeme();
-                    while (TempLexeme.Value != ")" && TempLexeme.Value != "{")
-                    {
-                        GoNext(0);
-                        TempLexeme = GetLexeme();
-                    }
-                    if (TempLexeme.Value == ")")
-                        GetConcreteLexeme(")");
                 }
+                Lexeme CurrentLexeme = GetLexeme();
+                //а если лишние скобки?
+                while (CurrentLexeme.Value == ")" || OperationPriorities.Keys.Contains(CurrentLexeme.Value))
+                {
+                    if (CurrentLexeme.Value == ")")
+                        LexemesIterator++;
+                    else
+                    {
+                        LexemesIterator++;
+                        try
+                        {
+                            ParseExpression();
+                        }
+                        catch (SyntaxException e)//надо ли тут выводить?
+                        {
+                            Console.WriteLine(e.Message);
+                        }
+                    }
+                    CurrentLexeme = GetLexeme();
+                }
+
+                //теперь можно парсить дальше
                 //создали узел
                 CycleOperator NewCycle = new CycleOperator(true, CycleCondition, GetLexeme().Line);
                 NodesStack.Push(NewCycle);
 
-                Lexeme CurrentLexeme = GetLexeme();
+                CurrentLexeme = GetLexeme();
                 if (CurrentLexeme.Value != "{")//то там один оператор
                     GetNextOperator();
                 else
@@ -872,7 +925,7 @@ namespace CPPDE
                 {
                     Console.WriteLine(e.Message);
                     NodesStack.Pop();
-                    CycleOperator Cycle = new CycleOperator(false, new ConstantNode("bool","false",GetLexeme().Line) , numline);
+                    CycleOperator Cycle = new CycleOperator(false, new ConstantNode("bool","true",GetLexeme().Line) , numline);
                     Cycle.ChildrenOperators = Operators.ChildrenOperators;
                     foreach (var child in Cycle.ChildrenOperators)
                         child.SetParentBlock(Cycle);
@@ -906,30 +959,28 @@ namespace CPPDE
                 catch (SyntaxException e)
                 {
                     Console.WriteLine(e.Message);
-                    Lexeme TempLexeme = GetLexeme();
-                    while (TempLexeme.Value != ")" && TempLexeme.Value != "}")
-                    {
-                        GoNext(0);
-                        TempLexeme = GetLexeme();
-                        if (TempLexeme.Value != ")" && TempLexeme.Value != "}")
-                            LexemesIterator++;
-                    }
-                    if (TempLexeme.Value == ")")
-                        GetConcreteLexeme(")");
+                }
+                CurrentLexeme = GetLexeme();
+                //а если лишние скобки?
+                while (CurrentLexeme.Value == ")" || OperationPriorities.Keys.Contains(CurrentLexeme.Value))
+                {
+                    if (CurrentLexeme.Value == ")")
+                        LexemesIterator++;
                     else
                     {
-                        if (NodesStack.Count == 2)
-                            try
-                            {
-                                throw new UnexpectedTokenException(GetLexeme().Line, "}");
-                            }
-                            catch(SyntaxException e1)
-                            {
-                                Console.WriteLine(e1.Message);
-                            }
+                        LexemesIterator++;
+                        try
+                        {
+                            ParseExpression();
+                        }
+                        catch (SyntaxException e)//надо ли тут выводить?
+                        {
+                            Console.WriteLine(e.Message);
+                        }
                     }
-                }
+                    CurrentLexeme = GetLexeme();
 
+                }
                 NodesStack.Pop();
                 CycleOperator NewCycle = new CycleOperator(false, Exp, numline);
                 NewCycle.ChildrenOperators = Operators.ChildrenOperators;
@@ -950,15 +1001,25 @@ namespace CPPDE
                 {
                     Console.WriteLine(e.Message);
                 }
-                List<AtomNode> BeginAction = GetSingleOperator();//тут ничего вываливаться не должно
-                try
+
+                List<AtomNode> BeginAction;
+                Lexeme CurrentLexeme = GetLexeme();
+                if (CurrentLexeme.Value==";")
                 {
+                    BeginAction = null;
                     GetConcreteLexeme(";");
                 }
-                catch (SyntaxException e)
-                {
-                    Console.WriteLine(e.Message);
-                }
+                else
+                    try
+                    {
+                        BeginAction = GetSingleOperator();//тут ничего вываливаться не должно
+                        GetConcreteLexeme(";");
+                    }
+                    catch (SyntaxException e)
+                    {
+                        Console.WriteLine(e.Message);
+                        BeginAction = null;
+                    }
 
                 AtomNode Expression;
                 try
@@ -984,6 +1045,7 @@ namespace CPPDE
                 try
 
                 {
+                    //тут только оператор присваивания
                     PostAction=ParseAssignmentOperator();
                 }
                 catch (SyntaxException e)
@@ -999,22 +1061,34 @@ namespace CPPDE
                 catch (SyntaxException e)
                 {
                     Console.WriteLine(e.Message);
-                    Lexeme TempLexeme = GetLexeme();
-                    while (TempLexeme.Value != ")" && TempLexeme.Value != "{")
+                }
+
+                CurrentLexeme = GetLexeme();
+                //а если лишние скобки?
+                while (CurrentLexeme.Value == ")" || OperationPriorities.Keys.Contains(CurrentLexeme.Value))
+                {
+                    if (CurrentLexeme.Value == ")")
+                        LexemesIterator++;
+                    else
                     {
-                        GoNext(0);
-                        TempLexeme = GetLexeme();
-                        if (TempLexeme.Value != ")" && TempLexeme.Value != "{")
-                            LexemesIterator++;
+                        LexemesIterator++;
+                        try
+                        {
+                            ParseExpression();
+                        }
+                        catch (SyntaxException e)//надо ли тут выводить?
+                        {
+                            Console.WriteLine(e.Message);
+                        }
                     }
-                    if (TempLexeme.Value == ")")
-                        GetConcreteLexeme(")");
+                    CurrentLexeme = GetLexeme();
+
                 }
 
                 CycleOperator NewCycle = new CycleOperator(BeginAction, Expression, PostAction, GetLexeme().Line);
                 NodesStack.Push(NewCycle);
 
-                Lexeme CurrentLexeme = GetLexeme();
+                CurrentLexeme = GetLexeme();
                 if (CurrentLexeme.Value != "{")//то там один оператор
                     GetNextOperator();
                 else

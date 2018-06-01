@@ -842,6 +842,7 @@ namespace C__DE.Models
                     }
             }
         }
+
         public void CheckTypesAdd()
         {
             switch (AssignedVariable.MainVariable.Type)
@@ -948,6 +949,7 @@ namespace C__DE.Models
                 AssignedVariable.MainVariable.WasNewValueUsed = false;
                 AssignedVariable.MainVariable.WasAssignedNewValue = LineNumber;
                 AssignedVariable.MainVariable.WasUsed = true;
+                MainVariable = AssignedVariable.MainVariable;
             }
             catch(SemanticException e)
             {
@@ -957,7 +959,8 @@ namespace C__DE.Models
 
             try
             {
-                IsSemanticCorrect &= RightPart.SemanticAnalysis();
+                if(RightPart!=null)
+                    IsSemanticCorrect &= RightPart.SemanticAnalysis();
             }
             catch (SemanticException e)
             {
@@ -993,6 +996,13 @@ namespace C__DE.Models
                         case "||=":
                             {
                                 ChechTypesLogical();
+                                break;
+                            }
+                        case "++":
+                        case "--":
+                            {
+                                if (MainVariable.Type != "int")
+                                    throw new InvalidTypeException(LineNumber, MainVariable.Type, AssignmentOperation);
                                 break;
                             }
                         default:
