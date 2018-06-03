@@ -9,14 +9,6 @@ using static CPPDE.Program;
 namespace C__DE.Models
 {
 
-    public static class Counters
-    {
-        public static int vars = 0;
-        public static int consts = 0;
-        public static int temps = 0; //счётчики для переменных, констант и временных ячеек
-        public static int ifs = 0;
-        public static int cycles = 0;
-    }
 
     public enum NodeType
     {

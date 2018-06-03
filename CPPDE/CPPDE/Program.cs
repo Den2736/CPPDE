@@ -11,7 +11,7 @@ namespace CPPDE
 {
     public partial class Program
     {
-        public static IEnumerable<string> Types = new string[] { "int", "char", "string", "float", "bool" };
+        public static IEnumerable<string> Types = new string[] { "int", /*"char", "string", "float",*/ "bool", "graph" };
 
         /// <summary>
         /// Lexemes in format (line number - lexemes)
