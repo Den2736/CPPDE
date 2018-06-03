@@ -78,9 +78,10 @@ namespace C__DE.Models
 
     public partial class BinaryOperatorNode : AtomNode //логический, сравнения или арифметический
     {
+#region old_functions
+        /*
         public void CheckTypesAdd()//если оператор плюс или минус
         {
-            //bool IsConst = FirstOperand.MainVariable.IsConst && SecondOperand.MainVariable.IsConst;
             switch (FirstOperand.MainVariable.Type)
             {
                 case "int":
@@ -90,29 +91,11 @@ namespace C__DE.Models
                             case "int":
                                 {
                                     MainVariable.Type = "int";
-                                    /*if (IsConst)
-                                    {
-                                        int first = int.Parse(FirstOperand.MainVariable.Value);
-                                        int second = int.Parse(SecondOperand.MainVariable.Value);
-                                        if (Value == "+")
-                                            MainVariable.Value = (first + second).ToString();
-                                        else //если минус
-                                            MainVariable.Value = (first - second).ToString();
-                                    }*/
                                     break;
                                 }
                             case "float":
                                 {
                                     MainVariable.Type = "float";
-                                    /*if (IsConst)
-                                    {
-                                        float first = float.Parse(FirstOperand.MainVariable.Value);
-                                        float second = float.Parse(SecondOperand.MainVariable.Value);
-                                        if (Value == "+")
-                                            MainVariable.Value = (first + second).ToString();
-                                        else //если минус
-                                            MainVariable.Value = (first - second).ToString();
-                                    }*/
                                     break;
                                 }
                             default: { throw new IncompatibleTypesException(LineNumber, "int", SecondOperand.MainVariable.Type); }
@@ -135,7 +118,7 @@ namespace C__DE.Models
                                             MainVariable.Value = (first + second).ToString();
                                         else //если минус
                                             MainVariable.Value = (first - second).ToString();
-                                    }*/
+                                    }
                                     break;
                                 }
                             default: { throw new IncompatibleTypesException(LineNumber, "int", SecondOperand.MainVariable.Type); }
@@ -235,7 +218,7 @@ namespace C__DE.Models
                                                     break;
                                                 }
                                         }
-                                    }*/
+                                    }
                                     break;
                                 }
                             case "float":
@@ -281,7 +264,7 @@ namespace C__DE.Models
                                                     break;
                                                 }
                                         }
-                                    }*/
+                                    }
                                     break;
                                 }
                             default: { throw new IncompatibleTypesException(LineNumber, "int", SecondOperand.MainVariable.Type); }
@@ -336,7 +319,7 @@ namespace C__DE.Models
                                                     break;
                                                 }
                                         }
-                                    }*/
+                                    }
                                     break;
                                 }
                             default: { throw new IncompatibleTypesException(LineNumber, "float", SecondOperand.MainVariable.Type); }
@@ -473,7 +456,7 @@ namespace C__DE.Models
                                 }
                         }
                     }
-                }*/
+                }
             }
             else throw new IncompatibleTypesException(LineNumber, type1, type2);
         }
@@ -495,7 +478,9 @@ namespace C__DE.Models
             if (((type1 == "int") || (type1 == "float") || (type1 == "bool")) || ((type2 == "int") || (type2 == "float") || (type2 == "bool")))
                 MainVariable.Type = "bool";
             else throw new IncompatibleTypesException(LineNumber, FirstOperand.MainVariable.Type, SecondOperand.MainVariable.Type);
-        }
+        }*/
+#endregion
+
 
         public override bool SemanticAnalysis()
         {
@@ -522,7 +507,7 @@ namespace C__DE.Models
                 if (IsSemanticCorrect)
                 {
                     if (Value == "-")
-                        if (FirstOperand.MainVariable.Type == "int" || FirstOperand.MainVariable.Type == "float")
+                        if (FirstOperand.MainVariable.Type == "int")
                         {
                             MainVariable.Type = FirstOperand.MainVariable.Type; //если унарный, то тип совпадает с типом операнда
                             return true;
@@ -530,7 +515,7 @@ namespace C__DE.Models
                         else throw new InvalidTypeException(LineNumber, FirstOperand.MainVariable.Type, Value);
                     if (Value == "!")
                     {
-                        if (FirstOperand.MainVariable.Type == "bool" || FirstOperand.MainVariable.Type == "int")
+                        if (FirstOperand.MainVariable.Type == "bool")
                         {
                             MainVariable.Type = FirstOperand.MainVariable.Type; //если унарный, то тип совпадает с типом операнда
                             return true;
@@ -566,24 +551,30 @@ namespace C__DE.Models
                         {
                             case NodeType.ArithmeticOperator:
                                 {
-                                    if (Value == "+" || Value == "-")
-                                        CheckTypesAdd();
-                                    else CheckTypesMul();
+                                    if (FirstOperand.MainVariable.Type != "int" || SecondOperand.MainVariable.Type != "int")
+                                        throw new IncompatibleTypesException(LineNumber, FirstOperand.MainVariable.Type, SecondOperand.MainVariable.Type);
+                                    MainVariable.Type = "int";
                                     break;
                                 }
                             case NodeType.ComparisonOperator:
                                 {
-                                    CheckTypesComparison();
+                                    if (FirstOperand.MainVariable.Type != "int" || SecondOperand.MainVariable.Type != "int")
+                                        throw new IncompatibleTypesException(LineNumber, FirstOperand.MainVariable.Type, SecondOperand.MainVariable.Type);
+                                    MainVariable.Type = "int";
                                     break;
                                 }
                             case NodeType.BitOperator:
                                 {
-                                    CheckTypesBit();
+                                    if (FirstOperand.MainVariable.Type != "int" || SecondOperand.MainVariable.Type != "int")
+                                        throw new IncompatibleTypesException(LineNumber, FirstOperand.MainVariable.Type, SecondOperand.MainVariable.Type);
+                                    MainVariable.Type = "int";
                                     break;
                                 }
                             case NodeType.LogicalOperator:
                                 {
-                                    CheckTypesLogical();
+                                    if (FirstOperand.MainVariable.Type != "bool" || SecondOperand.MainVariable.Type != "bool")
+                                        throw new IncompatibleTypesException(LineNumber, FirstOperand.MainVariable.Type, SecondOperand.MainVariable.Type);
+                                    MainVariable.Type = "bool";
                                     break;
                                 }
                         }
@@ -791,6 +782,7 @@ namespace C__DE.Models
 
     public partial class AssignmentOperator : AtomNode
     {
+        #region old_2
         public void CheckTypesAssign()
         {
             switch (AssignedVariable.MainVariable.Type)
@@ -937,7 +929,7 @@ namespace C__DE.Models
                 }
             throw new InvalidTypeException(LineNumber, AssignedVariable.MainVariable.Type, AssignmentOperation);
         }
-
+        #endregion
 
         public override bool SemanticAnalysis()
         {
@@ -975,27 +967,24 @@ namespace C__DE.Models
                     {
                         case "=":
                             {
-                                AssignedVariable.MainVariable.WasIdentified = true;
-                                CheckTypesAssign();
+                                if (AssignedVariable.MainVariable.Type != RightPart.MainVariable.Type)
+                                    throw new IncompatibleTypesException(LineNumber, AssignedVariable.MainVariable.Type, RightPart.MainVariable.Type);
                                 break;
                             }
                         case "+=":
-                            {
-                                CheckTypesAdd();
-                                break;
-                            }
                         case "-=":
                         case "*=":
                         case "/=":
                         case "%=":
                             {
-                                CheckTypesArithmetic();
+                                
                                 break;
                             }
                         case "&&=":
                         case "||=":
                             {
-                                ChechTypesLogical();
+                                if (AssignedVariable.MainVariable.Type!="bool" || RightPart.MainVariable.Type!="bool")
+                                    throw new IncompatibleTypesException(LineNumber, AssignedVariable.MainVariable.Type, RightPart.MainVariable.Type);
                                 break;
                             }
                         case "++":

@@ -43,8 +43,10 @@
   </ItemGroup>
   <ItemGroup>
     <Compile Include="Models\Exceptions\SemanticExceptions\IncompatibleTypesException.cs" />
+    <Compile Include="Models\Exceptions\SemanticExceptions\IntIsRequiredException.cs" />
     <Compile Include="Models\Exceptions\SemanticExceptions\InvalidTypeException.cs" />
     <Compile Include="Models\Exceptions\SemanticExceptions\RedeclaringVariableException.cs" />
+    <Compile Include="Models\Exceptions\SemanticExceptions\RequredConstantExceptoion.cs" />
     <Compile Include="Models\Exceptions\SemanticExceptions\SemanticException.cs" />
     <Compile Include="Models\Exceptions\SemanticExceptions\UndefinedVariableException.cs" />
     <Compile Include="Models\Exceptions\SemanticExceptions\UnidentifiedVariableException.cs" />
@@ -65,6 +67,7 @@
     <Compile Include="Models\Warnings\UnusedValueWarning.cs" />
     <Compile Include="Models\Warnings\UnusedVariableWarning.cs" />
     <Compile Include="Models\Warnings\WarningMessage.cs" />
+    <Compile Include="Models\WorkingWithGraphs.cs" />
     <Compile Include="SemanticAnalyzer.cs" />
     <Compile Include="SyntaxAnalyzer.cs" />
     <Compile Include="LexicalAnalyzer.cs" />

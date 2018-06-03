@@ -209,4 +209,34 @@ namespace C__DE.Models
             variable = v;
         }
     }
+
+    /// <summary>
+    /// Дальше всё, что связано с графами
+    /// </summary>
+    
+    //создание матрицы NxN (для графа). Тип элементов - int
+    public class CreateMatrixInterNode
+    {
+        //тут как-то выделять память
+        public int N;
+        public int number; //номер матрицы (можно использовать для именования, например, matrix_1)
+        public CreateMatrixInterNode(int rasm,  int num_matr)
+        {
+            N = rasm;
+            number=num_matr;
+        }
+    }
+
+    //аналогично - массив (например, массив used для работы с графами)
+    public class CreateArrayInterNode
+    {
+        //тут как-то выделять память
+        public int N;
+        public Variable graph; //обращаться как с обычной Int-константой
+        public CreateArrayInterNode(int n, Variable g)
+        {
+            N = n;
+            graph = g;
+        }
+    }
 }
