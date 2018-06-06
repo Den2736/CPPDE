@@ -603,12 +603,11 @@ namespace C__DE.Models
         {
             MainVariable = new Variable(); //создаём новую переменную и наделяем её новыми свойствами
             MainVariable.Name = DeclaratedVariable.Value;
-            MainVariable.AlternativeName = "var_" + Counters.vars.ToString();
+            MainVariable.AlternativeName = "var_" + (++Counters.vars).ToString();
             MainVariable.IsDeclared = true;
             MainVariable.DeclaredLine = LineNumber;
             MainVariable.Type = Type;
             MainVariable.WasIdentified = false;
-            Counters.vars++;
 
             //нужно посмотреть повторное объявление
             try

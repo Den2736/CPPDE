@@ -45,11 +45,13 @@
     <Compile Include="Models\Exceptions\SemanticExceptions\IncompatibleTypesException.cs" />
     <Compile Include="Models\Exceptions\SemanticExceptions\IntIsRequiredException.cs" />
     <Compile Include="Models\Exceptions\SemanticExceptions\InvalidTypeException.cs" />
+    <Compile Include="Models\Exceptions\SemanticExceptions\PositiveIntegerIsRequiredException.cs" />
     <Compile Include="Models\Exceptions\SemanticExceptions\RedeclaringVariableException.cs" />
     <Compile Include="Models\Exceptions\SemanticExceptions\RequredConstantExceptoion.cs" />
     <Compile Include="Models\Exceptions\SemanticExceptions\SemanticException.cs" />
     <Compile Include="Models\Exceptions\SemanticExceptions\UndefinedVariableException.cs" />
     <Compile Include="Models\Exceptions\SemanticExceptions\UnidentifiedVariableException.cs" />
+    <Compile Include="Models\Exceptions\SemanticExceptions\WrongOperandTypeException.cs" />
     <Compile Include="Models\Exceptions\SyntaxExceptions\ExpectedAnotheSympolException.cs" />
     <Compile Include="Models\Exceptions\SyntaxExceptions\SyntaxException.cs" />
     <Compile Include="Models\Exceptions\SyntaxExceptions\UnexpectedEOFException.cs" />

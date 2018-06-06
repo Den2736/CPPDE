@@ -6,12 +6,12 @@ using System.Threading.Tasks;
 
 namespace C__DE.Models.Exceptions.SemanticExceptions
 {
-    class RequredConstantExceptoion:SemanticException
+    class PositiveIntegerIsRequiredException: SemanticException
     {
-        public override string Message => $"Number of vertexes of graph must be constant in line {LineNumber} ";
+        public override string Message => $"Number of vertexes of graph must be positive integer in line {LineNumber} ";
         public int LineNumber { get; }
 
-        public RequredConstantExceptoion(int lineNumber)
+        public PositiveIntegerIsRequiredException(int lineNumber)
         {
             LineNumber = lineNumber;
         }

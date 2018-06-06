@@ -213,30 +213,29 @@ namespace C__DE.Models
     /// <summary>
     /// Дальше всё, что связано с графами
     /// </summary>
-    
-    //создание матрицы NxN (для графа). Тип элементов - int
-    public class CreateMatrixInterNode
+
+    //в начале сегмента можно хранить число вершин, потом число рёбер, потом саму марицу
+    //Можно не хранить число вершин - оно статическое и его можно взять сразу при анализе
+    //Можно не хранить число рёбер, а считать его по ходу дела
+
+
+    //ребро графа (она же ячейка в матрице, в виде которой хранится граф)
+    //ТУТ ГЕНЕРАЦИЯ НЕ НУЖНА, просто вспомогательная структура данных
+    public class GraphCell
     {
-        //тут как-то выделять память
-        public int N;
-        public int number; //номер матрицы (можно использовать для именования, например, matrix_1)
-        public CreateMatrixInterNode(int rasm,  int num_matr)
-        {
-            N = rasm;
-            number=num_matr;
-        }
+        //строка
+        public Variable i;
+        //столбец
+        public Variable j;
+        //граф (да, это тоже переменная на этапе анализа)
+        public Variable graph;
     }
 
-    //аналогично - массив (например, массив used для работы с графами)
-    public class CreateArrayInterNode
+    public class ArrayCell
     {
-        //тут как-то выделять память
-        public int N;
-        public Variable graph; //обращаться как с обычной Int-константой
-        public CreateArrayInterNode(int n, Variable g)
-        {
-            N = n;
-            graph = g;
-        }
+        //индекс
+        public Variable i;
+        //массив
+        public Variable array;
     }
 }

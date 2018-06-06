@@ -14,15 +14,24 @@ namespace C__DE.Models
         public static int ifs = 0; //условные операторы, счётчик нужен для нумерации веток
         public static int cycles = 0; //циклы, то же самое
         public static int comparsions = 0; //сравнния, там тоже нужны метки для присваивания значений
+        public static int graphs = 0; //графы, считаем их отдельно для удобства
+        public static int matricies = 0; //матрицы для промежуточных вычислений при работе с графами
+        public static int arrays = 0;
     }
 
     //статический класс для хранения промежуточного кода, возможно, будет пополняться
     public static class IntermediateCodeList
     {
         public static List<IntermediateCodeNode> IntermediateList= new List<IntermediateCodeNode>(); //Список промежуточных узлов
+        public static List<Variable> AllVariables = new List<Variable>(); //все переменные программы
         public static void push(IntermediateCodeNode Command)
         {
             IntermediateList.Add(Command);
+        }
+        public static void addVar(Variable v)
+        {
+            //переменные будут записаны в отдельном сегменте
+            AllVariables.Add(v);
         }
     }
 
@@ -52,6 +61,7 @@ namespace C__DE.Models
         public override void GenerateIntermediateCode()
         {
             MainVariable.AlternativeName = (++Counters.temps).ToString(); //присваиваем временной переменной имя 
+            IntermediateCodeList.addVar(MainVariable); //временную переменную - в список переменных
             //вот тут самое веселье
             if (IsUnary)
             {
@@ -243,7 +253,8 @@ namespace C__DE.Models
     {
         public override void GenerateIntermediateCode()
         {
-            IntermediateCodeList.push(new DeclarVar(MainVariable));
+            //добавили переменную
+            IntermediateCodeList.addVar(MainVariable);
         }
     }
 

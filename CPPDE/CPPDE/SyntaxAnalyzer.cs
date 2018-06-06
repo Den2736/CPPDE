@@ -133,9 +133,9 @@ namespace CPPDE
                 if ((s1 == "" || s1 == "(") && (s2 == "-"))
                     return true;
                 if ((s1 == "" || s1 == "(" || OperationPriorities.Keys.Contains(s1) && s1 != ")") && 
-                    (char.IsLetterOrDigit(s2[0]) || s2=="!"  || s2[0]=='\'' || s2[0]=='\"' || s2=="("))
+                    (char.IsLetterOrDigit(s2[0]) || s2=="!"  /*|| s2[0]=='\'' || s2[0]=='\"' */|| s2=="("))
                     return true;
-                if (s1.Length>0 && ((char.IsLetterOrDigit(s1[0]) || s1 == ")" || s1[0] == '\'' || s1[0] == '\"') && 
+                if (s1.Length>0 && ((char.IsLetterOrDigit(s1[0]) || s1 == ")" /*|| s1[0] == '\'' || s1[0] == '\"'*/) && 
                     (OperationPriorities.Keys.Contains(s2) && s2 != "!")))
                     return true;
                 return false;
@@ -201,7 +201,7 @@ namespace CPPDE
                             }
                         }
                         //дальше проверяем последнюю лексему выражения
-                        if (LastLexeme.Value == ")" || char.IsLetterOrDigit(LastLexeme.Value[0]) || LastLexeme.Value[0] == '\'' || LastLexeme.Value[0] == '\"')
+                        if (LastLexeme.Value == ")" || char.IsLetterOrDigit(LastLexeme.Value[0]) /*|| LastLexeme.Value[0] == '\'' || LastLexeme.Value[0] == '\"'*/)
                         {
                             while (OperationStack.Count > 0)
                             {
@@ -249,7 +249,7 @@ namespace CPPDE
                             Console.WriteLine(e.Message);
                             //аналогично пробуем собрать то, что есть
                             //если всё хорошо
-                            if (LastLexeme.Value == ")" || char.IsLetterOrDigit(LastLexeme.Value[0]) || LastLexeme.Value[0] == '\'' || LastLexeme.Value[0] == '\"')
+                            if (LastLexeme.Value == ")" || char.IsLetterOrDigit(LastLexeme.Value[0]) /*|| LastLexeme.Value[0] == '\'' || LastLexeme.Value[0] == '\"'*/)
                             {
                                 while (OperationStack.Count > 0)
                                 {
@@ -295,7 +295,7 @@ namespace CPPDE
                     else if (!CanBeTogether(LastLexeme.Value, CurrentLexeme.Value))
                     {
                         //проверяем, может ли вторая лексема быть началом нового выражения
-                        if (char.IsLetterOrDigit(CurrentLexeme.Value[0]) || CurrentLexeme.Value == "!" || CurrentLexeme.Value[0] == '\'' || CurrentLexeme.Value[0] == '\"' || CurrentLexeme.Value == "(")
+                        if (char.IsLetterOrDigit(CurrentLexeme.Value[0]) || CurrentLexeme.Value == "!" /*|| CurrentLexeme.Value[0] == '\'' || CurrentLexeme.Value[0] == '\"'*/ || CurrentLexeme.Value == "(")
                             //Если да, то собираем всё до первой лексемы в кучу
                         {
                             if (brackets > 0) //плохо со скобками
@@ -310,7 +310,7 @@ namespace CPPDE
                                 }
                             }
                             //дальше проверяем последнюю лексему выражения
-                            if (LastLexeme.Value == ")" || char.IsLetterOrDigit(LastLexeme.Value[0]) || LastLexeme.Value[0] == '\'' || LastLexeme.Value[0] == '\"')
+                            if (LastLexeme.Value == ")" || char.IsLetterOrDigit(LastLexeme.Value[0]) /*|| LastLexeme.Value[0] == '\'' || LastLexeme.Value[0] == '\"'*/)
                             {
                                 while (OperationStack.Count > 0)
                                 {
@@ -368,7 +368,7 @@ namespace CPPDE
                                 ResultStack.Push(NewConstant);
                             }
                         }
-
+                        /*
                         else if (CurrentLexeme.Value[0]=='\'') //это символ
                         {
                             ConstantNode NewConstant = new ConstantNode("char", CurrentLexeme.Value, CurrentLexeme.Line);
@@ -380,7 +380,7 @@ namespace CPPDE
                             ConstantNode NewConstant = new ConstantNode("string", CurrentLexeme.Value, CurrentLexeme.Line);
                             ResultStack.Push(NewConstant);
                         }
-
+                        */
                         else if (CurrentLexeme.Value == "true" || CurrentLexeme.Value == "false")//логическая константа
                         {
                             ConstantNode NewConstant = new ConstantNode("bool", CurrentLexeme.Value, CurrentLexeme.Line);
@@ -1262,24 +1262,26 @@ namespace CPPDE
                         ParseWriteOperator();
                     else if (Types.Contains(CurrentLexeme.Value))
                         ParseDeclaration();
-                    else if (CurrentLexeme.Value==";")//пустой оператор
+                    else if (OperationsWithGraphs.Keys.Contains(CurrentLexeme.Value))
+                        ParseGraphFunctions();
+                    else if (CurrentLexeme.Value == ";")//пустой оператор
                     {
                         GetConcreteLexeme(";");
                     }
-                    else if (LexemesIterator+1<LexemsForSyntaxAnalysis.Count && Operations.AssignmentOperations.Contains(LexemsForSyntaxAnalysis[LexemesIterator + 1].Value))
+                    else if (LexemesIterator + 1 < LexemsForSyntaxAnalysis.Count && Operations.AssignmentOperations.Contains(LexemsForSyntaxAnalysis[LexemesIterator + 1].Value))
                     {
                         AssignmentOperator AssignOp = ParseAssignmentOperator();
                         NodesStack.Peek().AddOperator(AssignOp);
-                        if (GetLexeme().Value==";")
+                        if (GetLexeme().Value == ";")
                             GetConcreteLexeme(";");
                     }
-                    else if (char.IsLetterOrDigit(CurrentLexeme.Value[0]) || CurrentLexeme.Value[0]=='\"' || CurrentLexeme.Value[0] == '\'' || CurrentLexeme.Value=="(")
+                    else if (char.IsLetterOrDigit(CurrentLexeme.Value[0]) || CurrentLexeme.Value[0] == '\"' || CurrentLexeme.Value[0] == '\'' || CurrentLexeme.Value == "(")
                     {
                         AtomNode Exp = ParseExpression();
                         NodesStack.Peek().AddOperator(Exp);
                         GetConcreteLexeme(";");
                     }
-                    else if (CurrentLexeme.Value=="}")
+                    else if (CurrentLexeme.Value == "}")
                     {
                         return;
                     }
@@ -1301,6 +1303,7 @@ namespace CPPDE
             public static void Parse()
             {
                 GetOperationsPriorities();
+                GetGraphFunctions();
                 DoLexemsList();
                 MainRootNode root = new MainRootNode(LexemsForSyntaxAnalysis[0].Line);
                 LexemesIterator = 0;
@@ -1316,6 +1319,100 @@ namespace CPPDE
                     HandleEOFException();
                 }
                 Root = root;
+            }
+
+            //Дальше пойдут графы
+            public static Dictionary<string, int> OperationsWithGraphs; //операции с графами оформлены в виде функций, ключ- функция, значение - количество параметров
+
+            //установка количества параметроф функций с графами (будет обновляться)
+            public static void GetGraphFunctions()
+            {
+                OperationsWithGraphs.Add("CreateGraph", 2); //граф и число его вершин
+                OperationsWithGraphs.Add("GetEdge", 4); //граф, вершина 1, вершина 2, переменная с результатом
+                OperationsWithGraphs.Add("SetEdge", 4); //то же самое, только последнее может быть любым выражением
+                OperationsWithGraphs.Add("CopyGraph", 2); //сначала куда, потом откуда. Графы должны быть созданы и одинаковой размерности
+            }
+
+            //парсинг операций с графами
+            public static void ParseGraphFunctions()
+            {
+                Lexeme CurrentLexeme = GetLexeme();
+                Lexeme Function = CurrentLexeme;
+                try
+                {
+                    GetConcreteLexeme("(");
+
+                }
+                catch (SyntaxException e)
+                {
+                    Console.WriteLine(e.Message);
+                }
+                if (ReservedWords.Contains(CurrentLexeme.Value) || !char.IsLetter(CurrentLexeme.Value[0]) || Types.Contains(CurrentLexeme.Value))
+                    throw new UnexpectedTokenException(CurrentLexeme.Line, CurrentLexeme.Value);
+                //первый параметр всегда имя графа
+                VariableNode Graph = new VariableNode(CurrentLexeme.Value, CurrentLexeme.Line);
+                
+
+                LexemesIterator++;
+                CurrentLexeme = GetLexeme();
+                int numParameters = OperationsWithGraphs[Function.Value] - 1;//количество оставшихся параметров
+                List<AtomNode> Parameters = new List<AtomNode>();
+                AtomNode Exp;
+                while (numParameters>0)
+                {   //тут можно сделать проверку типа "недостаточно параметров"
+                    try
+                    {
+                        GetConcreteLexeme(",");
+                    }
+                    catch (SyntaxException e)
+                    {
+                        Console.WriteLine(e.Message);
+                    }
+
+                    try
+                    {
+                        Exp = ParseExpression();
+                    }
+                    catch (SyntaxException e)
+                    {
+                        Console.WriteLine(e.Message);
+                        //тут всё равно что, всё равно всё плохо
+                        Exp = new ConstantNode("int", "0", GetLexeme().Line);
+                    }
+                    Parameters.Add(Exp);
+                    CurrentLexeme = GetLexeme();
+                    numParameters--;
+                }
+                try
+                {
+                    GetConcreteLexeme(")");
+                }
+                catch (SyntaxException e)
+                {
+                    Console.WriteLine(e.Message);
+                }
+                try
+                {
+                    GetConcreteLexeme(";");
+                }
+                catch (SyntaxException e)
+                {
+                    Console.WriteLine(e.Message);
+                }
+                //ну тут не свовсем понятно, если что-то плохо, пусть дальше парсится
+                switch (Function.Value)
+                {
+                    case ("CreateGraph"):
+                        {
+                            NodesStack.Peek().AddOperator(new CreatingGraphNode(Graph.MainVariable.Name, Parameters[0], Function.Line));
+                            break;
+                        }
+                    default:
+                        {
+                            break;
+                        }
+                }
+
             }
         }
     }
