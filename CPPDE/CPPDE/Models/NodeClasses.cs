@@ -4,27 +4,11 @@ using System.Collections.Generic;
 using System.Linq;
 using System.Text;
 using System.Threading.Tasks;
+using static CPPDE.Program;
 
 namespace C__DE.Models
 {
 
-    public static class Counters
-    {
-        public static int vars = 0;
-        public static int consts = 0;
-        public static int temps = 0; //счётчики для переменных, констант и временных ячеек
-        public static int ifs = 0;
-        public static int cycles = 0;
-    }
-
-    public static class Operations
-    {
-        public static List<string> LogicalOperations = new List<string> { "&&", "||", "!" };
-        public static List<string> ArithmeticOperations = new List<string> { "+", "-", "*", "/", "%" };
-        public static List<string> BitOperations = new List<string> { "&", "|", "^" };
-        public static List<string> ComparationOperations = new List<string> { "==", "!=", ">", "<", "<=", ">=" };
-        public static List<string> AssignmentOperations = new List<string> { "=", "+=", "-=", "*=", "/=", "%=", "&&=", "||+"};
-    }
 
     public enum NodeType
     {
@@ -55,7 +39,7 @@ namespace C__DE.Models
 
     public abstract partial class BlockNode : Node
     {
-        public List<Node> ChildrenOperators; //Ссылки на все внутренние операторы
+        public List<Node> ChildrenOperators=new List<Node>(); //Ссылки на все внутренние операторы
         public void AddOperator(Node Operator)//метод добавления оператора в список дочерних
         {
             ChildrenOperators.Add(Operator);
@@ -88,6 +72,8 @@ namespace C__DE.Models
             MainVariable.WasUsed=true;
             LineNumber = numLine;
             Value = ConstValue;
+            MainVariable.Type = Type;
+            MainVariable.WasIdentified = true;
             //Это никуда в таблицу переменных не заносится, просто само себе
         }
         public override void SetParentBlock(BlockNode Parent)
@@ -150,7 +136,7 @@ namespace C__DE.Models
             Value = Operation;
             FirstOperand = First;
             SecondOperand = null;
-            IsUnary = false;
+            IsUnary = true;
             LineNumber = numLine;
             if (Operation == "-")
                 TypeOfNode = NodeType.ArithmeticOperator;
@@ -224,7 +210,6 @@ namespace C__DE.Models
     {
         public ConditionalBranchNode(int numLine)
         {
-            ChildrenOperators = new List<Node>();
             TypeOfNode = NodeType.ConditionalBranch;
         }
     }
@@ -268,12 +253,21 @@ namespace C__DE.Models
     {
         //оператор присваивания, сюда входят также операторы += -= и так далее
         public string AssignmentOperation; //сама операция (просто присваивание или ещё что-то)
-        public AtomNode AssignedVariable;//либо узел -переменная, либо оператор объявления переменной
+        public VariableNode AssignedVariable;//либо узел -переменная, либо оператор объявления переменной
         public AtomNode RightPart; //присваиваться может только для переменной
-        public AssignmentOperator(AtomNode Var, AtomNode Expression, string Operation, int numLine)
+        public AssignmentOperator(VariableNode Var, AtomNode Expression, string Operation, int numLine)
         {
             AssignedVariable = Var;
             RightPart = Expression;
+            TypeOfNode = NodeType.AssignmentOperator;
+            AssignmentOperation = Operation;
+            LineNumber = numLine;
+        }
+
+        public AssignmentOperator(VariableNode Var, string Operation, int numLine)//для ++ и --
+        {
+            AssignedVariable = Var;
+            RightPart = null;
             TypeOfNode = NodeType.AssignmentOperator;
             AssignmentOperation = Operation;
             LineNumber = numLine;
@@ -283,6 +277,8 @@ namespace C__DE.Models
         {
             parentBlock = Parent;
             AssignedVariable.SetParentBlock(Parent);
+            if (RightPart!=null)
+                RightPart.SetParentBlock(Parent);
         }
 
     }
@@ -293,6 +289,7 @@ namespace C__DE.Models
         {
             TypeOfNode = NodeType.RootNode;
             LineNumber = numLine;
+            ChildrenOperators = new List<Node>();
         }
     }
 

@@ -1,4 +1,5 @@
 ﻿using C__DE.Models.Exceptions.SemanticExceptions;
+using C__DE.Models.Warnings;
 using System;
 using System.Collections.Generic;
 using System.Linq;
@@ -15,12 +16,30 @@ namespace C__DE.Models
 
     public abstract partial class BlockNode : Node
     {
-        public List<Variable> BlockVariables; //Переменные блока
+        public List<Variable> BlockVariables=new List<Variable>(); //Переменные блока
+
+        //проверяется все ли переменные и их значения были использованы
+        public void CheckVariables()
+        {
+            foreach (var BlockVar in BlockVariables)
+            {
+                try
+                {
+                    if (!BlockVar.WasUsed)
+                        throw new UnusedVariableWarning(BlockVar.DeclaredLine, BlockVar.Name);
+                    if (!BlockVar.WasNewValueUsed)
+                        throw new UnusedValueWarning(BlockVar.WasAssignedNewValue, BlockVar.Name);
+                }
+                catch (WarningMessage e)
+                {
+                    Console.WriteLine(e.Message);
+                }
+            }
+        }
     }
 
     public abstract partial class AtomNode : Node
     {
-
     }
 
     public partial class ConstantNode : AtomNode
@@ -28,8 +47,11 @@ namespace C__DE.Models
         public override bool SemanticAnalysis()
         {
             IsSemanticCorrect = true;
+            MainVariable.IsConst = true;
+            MainVariable.Value = Value;
             return true;
         }
+
     }
 
     public partial class VariableNode : AtomNode
@@ -40,7 +62,7 @@ namespace C__DE.Models
             while (true)
             {
                 Variable possibleVariable = parent.BlockVariables.FirstOrDefault(var => var.Name == Value);
-                if (possibleVariable.Name != null)
+                if (possibleVariable != null)
                 {
                     MainVariable = possibleVariable;
                     return true;
@@ -51,10 +73,13 @@ namespace C__DE.Models
             }
         }
 
+
     }
 
     public partial class BinaryOperatorNode : AtomNode //логический, сравнения или арифметический
     {
+#region old_functions
+        /*
         public void CheckTypesAdd()//если оператор плюс или минус
         {
             switch (FirstOperand.MainVariable.Type)
@@ -63,8 +88,16 @@ namespace C__DE.Models
                     {
                         switch (SecondOperand.MainVariable.Type)
                         {
-                            case "int": { MainVariable.Type = "int"; break; }
-                            case "float": { MainVariable.Type = "float"; break; }
+                            case "int":
+                                {
+                                    MainVariable.Type = "int";
+                                    break;
+                                }
+                            case "float":
+                                {
+                                    MainVariable.Type = "float";
+                                    break;
+                                }
                             default: { throw new IncompatibleTypesException(LineNumber, "int", SecondOperand.MainVariable.Type); }
                         }
                         break;
@@ -73,8 +106,21 @@ namespace C__DE.Models
                     {
                         switch (SecondOperand.MainVariable.Type)
                         {
-                            case "int": { MainVariable.Type = "float"; break; }
-                            case "float": { MainVariable.Type = "float"; break; }
+                            case "int":
+                            case "float":
+                                {
+                                    MainVariable.Type = "float";
+                                    /*if (IsConst)
+                                    {
+                                        float first = float.Parse(FirstOperand.MainVariable.Value);
+                                        float second = float.Parse(SecondOperand.MainVariable.Value);
+                                        if (Value == "+")
+                                            MainVariable.Value = (first + second).ToString();
+                                        else //если минус
+                                            MainVariable.Value = (first - second).ToString();
+                                    }
+                                    break;
+                                }
                             default: { throw new IncompatibleTypesException(LineNumber, "int", SecondOperand.MainVariable.Type); }
                         }
                         break;
@@ -85,8 +131,13 @@ namespace C__DE.Models
                             throw new InvalidTypeException(LineNumber, "string", "-");
                         switch (SecondOperand.MainVariable.Type)
                         {
-                            case "string": { MainVariable.Type = "string"; break; }
-                            case "char": { MainVariable.Type = "string"; break; }
+                            case "string":
+                            case "char": {
+                                    MainVariable.Type = "string";
+                                    //if (IsConst)
+                                       // MainVariable.Value = FirstOperand.MainVariable.Value + SecondOperand.MainVariable.Value;
+                                    break;
+                                }
                             default: { throw new IncompatibleTypesException(LineNumber, "string", SecondOperand.MainVariable.Type); }
                         }
                         break;
@@ -97,8 +148,13 @@ namespace C__DE.Models
                             throw new InvalidTypeException(LineNumber, "string", "-");
                         switch (SecondOperand.MainVariable.Type)
                         {
-                            case "string": { MainVariable.Type = "string"; break; }
-                            case "char": { MainVariable.Type = "string"; break; }
+                            case "string":
+                            case "char": {
+                                    MainVariable.Type = "string";
+                                    //if (IsConst)
+                                      //  MainVariable.Value = FirstOperand.MainVariable.Value + SecondOperand.MainVariable.Value;
+                                    break;
+                                }
                             default: { throw new IncompatibleTypesException(LineNumber, "string", SecondOperand.MainVariable.Type); }
                         }
                         break;
@@ -112,14 +168,105 @@ namespace C__DE.Models
 
         public void CheckTypesMul() //умножение и деление
         {
+            //bool IsConst = FirstOperand.MainVariable.IsConst && SecondOperand.MainVariable.IsConst;
             switch (FirstOperand.MainVariable.Type)
             {
                 case "int":
                     {
                         switch (SecondOperand.MainVariable.Type)
                         {
-                            case "int": { MainVariable.Type = "int"; break; }
-                            case "float": { MainVariable.Type = "float"; break; }
+                            case "int":
+                                {
+                                    MainVariable.Type = "int";
+                                    /*if (IsConst)
+                                    {
+                                        int first = int.Parse(FirstOperand.MainVariable.Value);
+                                        int second = int.Parse(SecondOperand.MainVariable.Value);
+                                        switch (Value)
+                                        {
+                                            case ("*"):
+                                                {
+                                                    MainVariable.Value = (first * second).ToString();
+                                                    break;
+                                                }
+                                            case ("/"):
+                                                {
+                                                    try
+                                                    {
+                                                        if (second == 0)
+                                                            throw new DividingByZeroWarning(LineNumber);
+                                                        MainVariable.Value = (first / second).ToString();
+                                                    }
+                                                    catch (WarningMessage e)
+                                                    {
+                                                        Console.WriteLine(e.Message);
+                                                    }
+                                                    break;
+                                                }
+                                            case ("%"):
+                                                {
+                                                    try
+                                                    {
+                                                        if (second == 0)
+                                                            throw new DividingByZeroWarning(LineNumber);
+                                                        MainVariable.Value = (first / second).ToString();
+                                                    }
+                                                    catch (WarningMessage e)
+                                                    {
+                                                        Console.WriteLine(e.Message);
+                                                    }
+                                                    break;
+                                                }
+                                        }
+                                    }
+                                    break;
+                                }
+                            case "float":
+                                {
+                                    MainVariable.Type = "float";
+                                    /*if (IsConst)
+                                    {
+                                        float first = float.Parse(FirstOperand.MainVariable.Value);
+                                        float second = float.Parse(SecondOperand.MainVariable.Value);
+                                        switch (Value)
+                                        {
+                                            case ("*"):
+                                                {
+                                                    MainVariable.Value = (first * second).ToString();
+                                                    break;
+                                                }
+                                            case ("/"):
+                                                {
+                                                    try
+                                                    {
+                                                        if (second == 0)
+                                                            throw new DividingByZeroWarning(LineNumber);
+                                                        MainVariable.Value = (first / second).ToString();
+                                                    }
+                                                    catch (WarningMessage e)
+                                                    {
+                                                        Console.WriteLine(e.Message);
+                                                    }
+                                                    break;
+                                                }
+                                            case ("%"):
+                                                {
+                                                    try
+                                                    {
+                                                        if (second == 0)
+                                                            throw new DividingByZeroWarning(LineNumber);
+                                                        MainVariable.Value = (first / second).ToString();
+                                                    }
+                                                    catch (WarningMessage e)
+                                                    {
+                                                        Console.WriteLine(e.Message);
+                                                    }
+                                                    break;
+                                                }
+                                        }
+                                    }
+                                    break;
+                                }
                             default: { throw new IncompatibleTypesException(LineNumber, "int", SecondOperand.MainVariable.Type); }
                         }
                         break;
@@ -128,8 +275,53 @@ namespace C__DE.Models
                     {
                         switch (SecondOperand.MainVariable.Type)
                         {
-                            case "int": { MainVariable.Type = "float"; break; }
-                            case "float": { MainVariable.Type = "float"; break; }
+                            case "int":
+                            case "float":
+                                {
+                                    MainVariable.Type = "float";
+                                    /*if (IsConst)
+                                    {
+                                        float first = float.Parse(FirstOperand.MainVariable.Value);
+                                        float second = float.Parse(SecondOperand.MainVariable.Value);
+                                        switch (Value)
+                                        {
+                                            case ("*"):
+                                                {
+                                                    MainVariable.Value = (first * second).ToString();
+                                                    break;
+                                                }
+                                            case ("/"):
+                                                {
+                                                    try
+                                                    {
+                                                        if (second == 0)
+                                                            throw new DividingByZeroWarning(LineNumber);
+                                                        MainVariable.Value = (first / second).ToString();
+                                                    }
+                                                    catch (WarningMessage e)
+                                                    {
+                                                        Console.WriteLine(e.Message);
+                                                    }
+                                                    break;
+                                                }
+                                            case ("%"):
+                                                {
+                                                    try
+                                                    {
+                                                        if (second == 0)
+                                                            throw new DividingByZeroWarning(LineNumber);
+                                                        MainVariable.Value = (first / second).ToString();
+                                                    }
+                                                    catch (WarningMessage e)
+                                                    {
+                                                        Console.WriteLine(e.Message);
+                                                    }
+                                                    break;
+                                                }
+                                        }
+                                    }
+                                    break;
+                                }
                             default: { throw new IncompatibleTypesException(LineNumber, "float", SecondOperand.MainVariable.Type); }
                         }
                         break;
@@ -145,7 +337,127 @@ namespace C__DE.Models
             if (((type1 == "int" || type1 == "float") && (type2 == "int" || type2 == "float"))//если оба числа
                 || ((type1 == "char" || type1 == "string") && (type2 == "char" || type2 == "string"))//или оба строковые
                 || (type1 == "bool" && type2 == "bool"))
+            {
                 MainVariable.Type = "bool";
+                bool IsConst = FirstOperand.MainVariable.IsConst && SecondOperand.MainVariable.IsConst;
+                /*if (IsConst)
+                {
+                    if (type1=="int" || type1=="float")
+                    {
+                        float first = float.Parse(FirstOperand.MainVariable.Value);
+                        float second = float.Parse(SecondOperand.MainVariable.Value);
+                        switch (Value)
+                        {
+                            case (">"):
+                                {
+                                    MainVariable.Value = (first > second).ToString();
+                                    break;
+                                }
+                            case (">="):
+                                {
+                                    MainVariable.Value = (first >= second).ToString();
+                                    break;
+                                }
+                            case ("<"):
+                                {
+                                    MainVariable.Value = (first < second).ToString();
+                                    break;
+                                }
+                            case ("<="):
+                                {
+                                    MainVariable.Value = (first <= second).ToString();
+                                    break;
+                                }
+                            case ("=="):
+                                {
+                                    MainVariable.Value = (first == second).ToString();
+                                    break;
+                                }
+                            case ("!="):
+                                {
+                                    MainVariable.Value = (first != second).ToString();
+                                    break;
+                                }
+                        }
+                    }
+                    else if (type1=="char" || type1=="string")
+                    {
+                        string first = FirstOperand.MainVariable.Value;
+                        string second = SecondOperand.MainVariable.Value;
+                        switch (Value)
+                        {
+                            case (">"):
+                                {
+                                    MainVariable.Value = (String.Compare(first,second)>0).ToString();
+                                    break;
+                                }
+                            case (">="):
+                                {
+                                    MainVariable.Value = (String.Compare(first, second) >= 0).ToString();
+                                    break;
+                                }
+                            case ("<"):
+                                {
+                                    MainVariable.Value = (String.Compare(first, second)<0).ToString();
+                                    break;
+                                }
+                            case ("<="):
+                                {
+                                    MainVariable.Value = (String.Compare(first, second) <= 0).ToString();
+                                    break;
+                                }
+                            case ("=="):
+                                {
+                                    MainVariable.Value = (String.Equals(first, second)).ToString();
+                                    break;
+                                }
+                            case ("!="):
+                                {
+                                    MainVariable.Value = (!String.Equals(first, second)).ToString();
+                                    break;
+                                }
+                        }
+                    }
+                    else //иначе булевский
+                    {
+                        bool first = bool.Parse(FirstOperand.MainVariable.Value);
+                        bool second = bool.Parse(SecondOperand.MainVariable.Value);
+                        switch (Value)
+                        {
+                            case (">"):
+                                {
+                                    MainVariable.Value = (first && !second).ToString();
+                                    break;
+                                }
+                            case (">="):
+                                {
+                                    MainVariable.Value = (first).ToString();
+                                    break;
+                                }
+                            case ("<"):
+                                {
+                                    MainVariable.Value = (!first && second).ToString();
+                                    break;
+                                }
+                            case ("<="):
+                                {
+                                    MainVariable.Value = (second).ToString();
+                                    break;
+                                }
+                            case ("=="):
+                                {
+                                    MainVariable.Value = ((first && second) || (!first && !second)).ToString();
+                                    break;
+                                }
+                            case ("!="):
+                                {
+                                    MainVariable.Value = ((!first && second) || (first && !second)).ToString();
+                                    break;
+                                }
+                        }
+                    }
+                }
+            }
             else throw new IncompatibleTypesException(LineNumber, type1, type2);
         }
 
@@ -166,22 +478,28 @@ namespace C__DE.Models
             if (((type1 == "int") || (type1 == "float") || (type1 == "bool")) || ((type2 == "int") || (type2 == "float") || (type2 == "bool")))
                 MainVariable.Type = "bool";
             else throw new IncompatibleTypesException(LineNumber, FirstOperand.MainVariable.Type, SecondOperand.MainVariable.Type);
-        }
+        }*/
+#endregion
+
 
         public override bool SemanticAnalysis()
         {
             //будем считать, что определено
+            MainVariable = new Variable();
             MainVariable.WasIdentified = true;
 
             try
             {
+                IsSemanticCorrect = FirstOperand.SemanticAnalysis();
                 FirstOperand.MainVariable.WasUsed = true;
                 IsSemanticCorrect =FirstOperand.SemanticAnalysis();
+                FirstOperand.MainVariable.WasNewValueUsed = true;
                 if (!FirstOperand.MainVariable.WasIdentified)
                     throw new UnidentifiedVariableException(FirstOperand.LineNumber, FirstOperand.MainVariable.Name);
             }
-            catch (SemanticException)
+            catch (SemanticException e)
             {
+                Console.WriteLine(e.Message);
                 IsSemanticCorrect = false;
             }
 
@@ -189,7 +507,7 @@ namespace C__DE.Models
                 if (IsSemanticCorrect)
                 {
                     if (Value == "-")
-                        if (FirstOperand.MainVariable.Type == "int" || FirstOperand.MainVariable.Type == "float")
+                        if (FirstOperand.MainVariable.Type == "int")
                         {
                             MainVariable.Type = FirstOperand.MainVariable.Type; //если унарный, то тип совпадает с типом операнда
                             return true;
@@ -197,7 +515,7 @@ namespace C__DE.Models
                         else throw new InvalidTypeException(LineNumber, FirstOperand.MainVariable.Type, Value);
                     if (Value == "!")
                     {
-                        if (FirstOperand.MainVariable.Type == "bool" || FirstOperand.MainVariable.Type == "int")
+                        if (FirstOperand.MainVariable.Type == "bool")
                         {
                             MainVariable.Type = FirstOperand.MainVariable.Type; //если унарный, то тип совпадает с типом операнда
                             return true;
@@ -214,16 +532,18 @@ namespace C__DE.Models
             {
                 try
                 {
+                    IsSemanticCorrect &= SecondOperand.SemanticAnalysis();
                     SecondOperand.MainVariable.WasUsed = true;
+                    SecondOperand.MainVariable.WasNewValueUsed = true;
                     if (!SecondOperand.MainVariable.WasIdentified)
                         throw new UnidentifiedVariableException(SecondOperand.LineNumber, SecondOperand.MainVariable.Name);
                 }
-                catch (SemanticException)
+                catch (SemanticException e)
                 {
-
+                    Console.WriteLine(e.Message);
+                    IsSemanticCorrect = false;
                 }
-                bool IsSecondOperandCorrect=SecondOperand.SemanticAnalysis();//дальше проверка совместимости типов и корректности операций
-                if (IsSecondOperandCorrect && IsSemanticCorrect)
+                if (IsSemanticCorrect)
                 {
                     try
                     {
@@ -231,31 +551,38 @@ namespace C__DE.Models
                         {
                             case NodeType.ArithmeticOperator:
                                 {
-                                    if (Value == "+" || Value == "-")
-                                        CheckTypesAdd();
-                                    else CheckTypesMul();
+                                    if (FirstOperand.MainVariable.Type != "int" || SecondOperand.MainVariable.Type != "int")
+                                        throw new IncompatibleTypesException(LineNumber, FirstOperand.MainVariable.Type, SecondOperand.MainVariable.Type);
+                                    MainVariable.Type = "int";
                                     break;
                                 }
                             case NodeType.ComparisonOperator:
                                 {
-                                    CheckTypesComparison();
+                                    if (FirstOperand.MainVariable.Type != "int" || SecondOperand.MainVariable.Type != "int")
+                                        throw new IncompatibleTypesException(LineNumber, FirstOperand.MainVariable.Type, SecondOperand.MainVariable.Type);
+                                    MainVariable.Type = "int";
                                     break;
                                 }
                             case NodeType.BitOperator:
                                 {
-                                    CheckTypesBit();
+                                    if (FirstOperand.MainVariable.Type != "int" || SecondOperand.MainVariable.Type != "int")
+                                        throw new IncompatibleTypesException(LineNumber, FirstOperand.MainVariable.Type, SecondOperand.MainVariable.Type);
+                                    MainVariable.Type = "int";
                                     break;
                                 }
                             case NodeType.LogicalOperator:
                                 {
-                                    CheckTypesLogical();
+                                    if (FirstOperand.MainVariable.Type != "bool" || SecondOperand.MainVariable.Type != "bool")
+                                        throw new IncompatibleTypesException(LineNumber, FirstOperand.MainVariable.Type, SecondOperand.MainVariable.Type);
+                                    MainVariable.Type = "bool";
                                     break;
                                 }
                         }
                         return true;
                     }
-                    catch (SemanticException)
+                    catch (SemanticException e)
                     {
+                        Console.WriteLine(e.Message);
                         IsSemanticCorrect = false;
                         return false;
                     }
@@ -267,6 +594,7 @@ namespace C__DE.Models
                 }
             }
         }
+
     }
 
     public partial class VariableDeclarationNode : AtomNode
@@ -275,10 +603,11 @@ namespace C__DE.Models
         {
             MainVariable = new Variable(); //создаём новую переменную и наделяем её новыми свойствами
             MainVariable.Name = DeclaratedVariable.Value;
-            MainVariable.AlternativeName = "var_" + Counters.vars.ToString();
+            MainVariable.AlternativeName = "var_" + (++Counters.vars).ToString();
             MainVariable.IsDeclared = true;
+            MainVariable.DeclaredLine = LineNumber;
             MainVariable.Type = Type;
-            Counters.vars++;
+            MainVariable.WasIdentified = false;
 
             //нужно посмотреть повторное объявление
             try
@@ -293,10 +622,12 @@ namespace C__DE.Models
                 parentBlock.BlockVariables.Add(MainVariable); //помещаем в список переменных данного блока
                 IsSemanticCorrect = true;
             }
-            catch (SemanticException)
+            catch (SemanticException e)
             {
+                Console.WriteLine(e.Message);
                 IsSemanticCorrect = false; //плохо
             }
+
             DeclaratedVariable.SemanticAnalysis();
             return IsSemanticCorrect;
         }
@@ -312,8 +643,9 @@ namespace C__DE.Models
             {
                 IsSemanticCorrect &= Condition.SemanticAnalysis();
             }
-            catch (SemanticException)
+            catch (SemanticException e)
             {
+                Console.WriteLine(e.Message);
                 IsSemanticCorrect = false;
             }
  
@@ -332,12 +664,17 @@ namespace C__DE.Models
                 {
                     IsSemanticCorrect = ElseBranch.SemanticAnalysis();
                 }
-                catch (SemanticException)
+                catch (SemanticException e)
                 {
+                    Console.WriteLine(e.Message);
                     IsSemanticCorrect = false;
                 }
             }
-        return IsSemanticCorrect;
+
+            IfBranch.CheckVariables();
+            if (ElseBranch != null)
+                ElseBranch.CheckVariables();
+            return IsSemanticCorrect;
         }
     }
 
@@ -352,8 +689,9 @@ namespace C__DE.Models
                 {
                     IsSemanticCorrect &= oper.SemanticAnalysis();
                 }
-                catch (SemanticException)
+                catch (SemanticException e)
                 {
+                    Console.WriteLine(e.Message);
                     IsSemanticCorrect = false;
                 }
             }
@@ -374,22 +712,27 @@ namespace C__DE.Models
                     {
                         IsSemanticCorrect &= Act.SemanticAnalysis();
                     }
-                    catch (SemanticException)
+                    catch (SemanticException e)
                     {
+                        Console.WriteLine(e.Message);
                         IsSemanticCorrect = false;
                     }
                 }
             }
 
-            if (ContinueCondition!=null)
+            if (IsPredCondition)
             {
-                try
+                if (ContinueCondition != null)
                 {
-                    IsSemanticCorrect &= ContinueCondition.SemanticAnalysis();
-                }
-                catch(SemanticException)
-                {
-                    IsSemanticCorrect = false;
+                    try
+                    {
+                        IsSemanticCorrect &= ContinueCondition.SemanticAnalysis();
+                    }
+                    catch (SemanticException e)
+                    {
+                        Console.WriteLine(e.Message);
+                        IsSemanticCorrect = false;
+                    }
                 }
             }
 
@@ -399,8 +742,9 @@ namespace C__DE.Models
                 {
                     IsSemanticCorrect &= IterationActivity.SemanticAnalysis();
                 }
-                catch (SemanticException)
+                catch (SemanticException e)
                 {
+                    Console.WriteLine(e.Message);
                     IsSemanticCorrect = false;
                 }
             }
@@ -411,18 +755,33 @@ namespace C__DE.Models
                 {
                     IsSemanticCorrect &= oper.SemanticAnalysis();
                 }
-                catch (SemanticException)
+                catch (SemanticException e)
                 {
+                    Console.WriteLine(e.Message);
                     IsSemanticCorrect = false;
                 }
             }
 
+            if (ContinueCondition!=null) //ещё раз проверить условие, так как оно проверятся на каждой итерации
+            {
+                try
+                {
+                    IsSemanticCorrect &= ContinueCondition.SemanticAnalysis();
+                }
+                catch (SemanticException e)
+                {
+                    Console.WriteLine(e.Message);
+                    IsSemanticCorrect = false;
+                }
+            }
+            CheckVariables();
             return IsSemanticCorrect;
         }
     }
 
     public partial class AssignmentOperator : AtomNode
     {
+        #region old_2
         public void CheckTypesAssign()
         {
             switch (AssignedVariable.MainVariable.Type)
@@ -474,6 +833,7 @@ namespace C__DE.Models
                     }
             }
         }
+
         public void CheckTypesAdd()
         {
             switch (AssignedVariable.MainVariable.Type)
@@ -568,26 +928,34 @@ namespace C__DE.Models
                 }
             throw new InvalidTypeException(LineNumber, AssignedVariable.MainVariable.Type, AssignmentOperation);
         }
-
+        #endregion
 
         public override bool SemanticAnalysis()
         {
             IsSemanticCorrect = true;
+            MainVariable = new Variable();
             try
             {
-                AssignedVariable.SemanticAnalysis();
+                IsSemanticCorrect &= AssignedVariable.SemanticAnalysis();
+                AssignedVariable.MainVariable.WasNewValueUsed = false;
+                AssignedVariable.MainVariable.WasAssignedNewValue = LineNumber;
+                AssignedVariable.MainVariable.WasUsed = true;
+                MainVariable = AssignedVariable.MainVariable;
             }
-            catch(SemanticException)
+            catch(SemanticException e)
             {
+                Console.WriteLine(e.Message);
                 IsSemanticCorrect = false;
             }
 
             try
             {
-                RightPart.SemanticAnalysis();
+                if(RightPart!=null)
+                    IsSemanticCorrect &= RightPart.SemanticAnalysis();
             }
-            catch (SemanticException)
+            catch (SemanticException e)
             {
+                Console.WriteLine(e.Message);
                 IsSemanticCorrect = false;
             }
 
@@ -598,27 +966,31 @@ namespace C__DE.Models
                     {
                         case "=":
                             {
-                                MainVariable.WasIdentified = true;
-                                CheckTypesAssign();
+                                if (AssignedVariable.MainVariable.Type != RightPart.MainVariable.Type)
+                                    throw new IncompatibleTypesException(LineNumber, AssignedVariable.MainVariable.Type, RightPart.MainVariable.Type);
                                 break;
                             }
                         case "+=":
-                            {
-                                CheckTypesAdd();
-                                break;
-                            }
                         case "-=":
                         case "*=":
                         case "/=":
                         case "%=":
                             {
-                                CheckTypesArithmetic();
+                                
                                 break;
                             }
                         case "&&=":
                         case "||=":
                             {
-                                ChechTypesLogical();
+                                if (AssignedVariable.MainVariable.Type!="bool" || RightPart.MainVariable.Type!="bool")
+                                    throw new IncompatibleTypesException(LineNumber, AssignedVariable.MainVariable.Type, RightPart.MainVariable.Type);
+                                break;
+                            }
+                        case "++":
+                        case "--":
+                            {
+                                if (MainVariable.Type != "int")
+                                    throw new InvalidTypeException(LineNumber, MainVariable.Type, AssignmentOperation);
                                 break;
                             }
                         default:
@@ -628,8 +1000,9 @@ namespace C__DE.Models
                     }
                     return true; //если всё хорошо, то true
                 }
-                catch (SemanticException)
+                catch (SemanticException e)
                 {
+                    Console.WriteLine(e.Message);
                     IsSemanticCorrect = false;
                     return false;
                 }
@@ -649,16 +1022,17 @@ namespace C__DE.Models
                 {
                     IsSemanticCorrect &= oper.SemanticAnalysis();
                 }
-                catch (SemanticException)
+                catch (SemanticException e)
                 {
+                    Console.WriteLine(e.Message);
                     IsSemanticCorrect = false;
                 }
             }
+            CheckVariables();
             return IsSemanticCorrect;
         }
     }
 
-    //С чтением и записью хз как, пока строка будет
     public partial class ReadOperator : AtomNode
     {
         public override bool SemanticAnalysis()
@@ -667,9 +1041,13 @@ namespace C__DE.Models
             {
                 IsSemanticCorrect = ReadVariable.SemanticAnalysis();
                 ReadVariable.MainVariable.WasIdentified = true;
+                ReadVariable.MainVariable.WasNewValueUsed = false;
+                ReadVariable.MainVariable.WasUsed = true;
+                ReadVariable.MainVariable.WasAssignedNewValue = LineNumber;
             }
-            catch (SemanticException)
+            catch (SemanticException e)
             {
+                Console.WriteLine(e.Message);
                 IsSemanticCorrect = false;
             }
             return IsSemanticCorrect;
@@ -682,13 +1060,15 @@ namespace C__DE.Models
         {
             try
             {
-                WriteVariable.MainVariable.WasUsed = true;
                 IsSemanticCorrect = WriteVariable.SemanticAnalysis();
+                WriteVariable.MainVariable.WasUsed = true;
+                WriteVariable.MainVariable.WasNewValueUsed = true;
                 if (!WriteVariable.MainVariable.WasIdentified)
                     throw new UnidentifiedVariableException(WriteVariable.LineNumber, WriteVariable.MainVariable.Name);
             }
-            catch (SemanticException)
+            catch (SemanticException e)
             {
+                Console.WriteLine(e.Message);
                 IsSemanticCorrect = false;
             }
             return IsSemanticCorrect;
