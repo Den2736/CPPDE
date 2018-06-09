@@ -256,7 +256,6 @@ namespace C__DE.Models
     //Добавление ребра (сделать так, чтобы ребро нельзя было добавить петлю, кратных рёбер НЕ будет)
     public class SetEdgeNode: AtomNode
     {
-        //MainVariable - сам граф
         public VariableNode graph;
         public AtomNode first; //первая вершина
         public AtomNode second; //вторяа вершина
@@ -340,6 +339,8 @@ namespace C__DE.Models
                     Res.MainVariable.WasNewValueUsed = false;
                     if (Res.TypeOfNode != NodeType.Variable)
                         throw new WrongOperandTypeException(LineNumber, "SetEdge", 4, "int variable");
+                    if (!Res.MainVariable.WasIdentified)
+                        throw new UnidentifiedVariableException(LineNumber, Res.MainVariable.Name);
                 }
                 catch (SemanticException e)
                 {
@@ -349,6 +350,186 @@ namespace C__DE.Models
                  //возвращаемся
                 return IsSemanticCorrect;
             }
+        }
+
+        public override string CanCreateGraph()
+        {
+            return "";
+        }
+
+        public override void GenerateIntermediateCode()
+        {
+            IntermediateCodeList.push(new SetGraphCell(Res.MainVariable, new GraphCell(MainVariable, first.MainVariable, second.MainVariable)));
+        }
+    }
+
+    public class GetEdgeNode: AtomNode
+    {
+            public VariableNode graph;
+            public AtomNode first; //первая вершина
+            public AtomNode second; //вторяа вершина
+            public AtomNode Res; //результирующая переменная
+
+            public GetEdgeNode(VariableNode gr, AtomNode firstVert, AtomNode secondVert, int Line, AtomNode Result)
+            {
+                graph = gr;
+                first = firstVert;
+                second = secondVert;
+                LineNumber = Line;
+                Res = Result;
+            }
+
+            public override void SetParentBlock(BlockNode Parent)
+            {
+                parentBlock = Parent;
+                graph.SetParentBlock(Parent);
+                first.SetParentBlock(Parent);
+                second.SetParentBlock(Parent);
+                Res.SetParentBlock(Parent);
+            }
+
+            public override bool SemanticAnalysis()
+            {
+                try
+                {
+                    IsSemanticCorrect = graph.SemanticAnalysis();
+                    graph.MainVariable.WasUsed = true;
+                    graph.MainVariable.WasNewValueUsed = true;
+                    if (graph.MainVariable.Type != "graph")
+                        throw new WrongOperandTypeException(LineNumber, "GetEdge", 1, "graph");
+
+                }
+                catch (SemanticException e)
+                {
+                    Console.WriteLine(e.Message);
+                    IsSemanticCorrect = false;
+                }
+
+                //проверяем первую вершину
+                try
+                {
+                    IsSemanticCorrect &= first.SemanticAnalysis();
+                    first.MainVariable.WasUsed = true;
+                    first.MainVariable.WasNewValueUsed = true;
+                    if (first.MainVariable.Type != "int")
+                        throw new WrongOperandTypeException(LineNumber, "GetEdge", 2, "int");
+                    if (!first.MainVariable.WasIdentified)
+                        throw new UnidentifiedVariableException(LineNumber, first.MainVariable.Name);
+                }
+                catch (SemanticException e)
+                {
+                    Console.WriteLine(e.Message);
+                    IsSemanticCorrect = false;
+                }
+
+                //аналогично вторую
+                try
+                {
+                    IsSemanticCorrect &= second.SemanticAnalysis();
+                    second.MainVariable.WasUsed = true;
+                    second.MainVariable.WasNewValueUsed = true;
+                    if (second.MainVariable.Type != "int")
+                        throw new WrongOperandTypeException(LineNumber, "GetEdge", 3, "int");
+                    if (!second.MainVariable.WasIdentified)
+                        throw new UnidentifiedVariableException(LineNumber, second.MainVariable.Name);
+                }
+                catch (SemanticException e)
+                {
+                    Console.WriteLine(e.Message);
+                    IsSemanticCorrect = false;
+                }
+
+                //теперь результирующая
+                {
+                    try
+                    {
+                        IsSemanticCorrect &= Res.SemanticAnalysis();
+                        Res.MainVariable.WasUsed = true;
+                        Res.MainVariable.WasNewValueUsed = false;
+                        if (Res.TypeOfNode != NodeType.Variable)
+                            throw new WrongOperandTypeException(LineNumber, "GetEdge", 4, "int variable");
+                    }
+                    catch (SemanticException e)
+                    {
+                        Console.WriteLine(e.Message);
+                        IsSemanticCorrect = false;
+                    }
+                    //возвращаемся
+                    return IsSemanticCorrect;
+                }
+            }
+
+            public override string CanCreateGraph()
+            {
+                return "";
+            }
+
+            public override void GenerateIntermediateCode()
+            {
+                IntermediateCodeList.push(new GetGraphCell(Res.MainVariable, new GraphCell(MainVariable, first.MainVariable, second.MainVariable)));
+            }
+        }
+
+    //Сначала КУДА копируем, потом ОТКУДА
+    public class CopyGraph: AtomNode
+    {
+        public VariableNode outGraph;
+        public AtomNode inGraph;
+
+        public CopyGraph(VariableNode First, VariableNode Second, int Line)
+        {
+            outGraph = First;
+            inGraph = Second;
+            LineNumber = Line;
+        }
+
+        public override void SetParentBlock(BlockNode Parent)
+        {
+            parentBlock = Parent;
+            outGraph.SetParentBlock(Parent);
+            inGraph.SetParentBlock(Parent);
+        }
+
+        public override string CanCreateGraph()
+        {
+            return "";
+        }
+
+        public override bool SemanticAnalysis()
+        {
+            try
+            {
+                IsSemanticCorrect = outGraph.SemanticAnalysis();
+                if (outGraph.MainVariable.Type != "graph")
+                    throw new WrongOperandTypeException(LineNumber, "CopyGraph", 1, "graph");
+            }
+            catch (SemanticException e)
+            {
+                Console.WriteLine(e.Message);
+                IsSemanticCorrect = false;
+            }
+
+            try
+            {
+                IsSemanticCorrect &= inGraph.SemanticAnalysis();
+                if (inGraph.MainVariable.Type != "graph" || (inGraph.TypeOfNode != NodeType.Variable))
+                    throw new WrongOperandTypeException(LineNumber, "CopyGraph", 2, "graph");
+                if (inGraph.IsSemanticCorrect && outGraph.IsSemanticCorrect) //ещё надо сравнить размерности
+                    if (int.Parse(inGraph.MainVariable.Value) != int.Parse(outGraph.MainVariable.Value)) //если не равны
+                        throw new UnequalGraphsDimentionsException(LineNumber, outGraph.MainVariable.Name, inGraph.MainVariable.Name);
+                
+            }
+            catch (SemanticException e)
+            {
+                Console.WriteLine(e.Message);
+                IsSemanticCorrect = false;
+            }
+            return IsSemanticCorrect;
+        }
+
+        public override void GenerateIntermediateCode()
+        {
+            IntermediateCodeList.push(new CopyGraphsInterNode(outGraph.MainVariable, inGraph.MainVariable));
         }
     }
 }

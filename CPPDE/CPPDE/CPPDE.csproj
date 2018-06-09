@@ -50,6 +50,7 @@
     <Compile Include="Models\Exceptions\SemanticExceptions\RequredConstantExceptoion.cs" />
     <Compile Include="Models\Exceptions\SemanticExceptions\SemanticException.cs" />
     <Compile Include="Models\Exceptions\SemanticExceptions\UndefinedVariableException.cs" />
+    <Compile Include="Models\Exceptions\SemanticExceptions\UnequalGraphsDimentions.cs" />
     <Compile Include="Models\Exceptions\SemanticExceptions\UnidentifiedVariableException.cs" />
     <Compile Include="Models\Exceptions\SemanticExceptions\WrongOperandTypeException.cs" />
     <Compile Include="Models\Exceptions\SyntaxExceptions\ExpectedAnotheSympolException.cs" />
@@ -59,6 +60,7 @@
     <Compile Include="Models\Exceptions\SyntaxExceptions\UnexpectedEndOfExpressionException.cs" />
     <Compile Include="Models\Exceptions\SyntaxExceptions\UnmatchedCloseBracketExpression.cs" />
     <Compile Include="Models\Exceptions\SyntaxExceptions\UnmatchedOpenBracketsInExpresssion.cs" />
+    <Compile Include="Models\GeneratingAssembleCode.cs" />
     <Compile Include="Models\GeneratingIntermediateCode.cs" />
     <Compile Include="Models\IntermediateCodeNode.cs" />
     <Compile Include="Models\LexicalParser.cs" />

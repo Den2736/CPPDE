@@ -44,7 +44,10 @@ namespace C__DE.Models
     {
         public override void GenerateIntermediateCode()
         {
-            //с констанотой по идее ничего особо делать не надо
+            MainVariable.AlternativeName = "const_" + (++Counters.consts);
+            MainVariable.IsConst = true;
+            //константы все отдельно будут (пофиг на оптимизацию)
+            IntermediateCodeList.addVar(MainVariable);
         }
     }
 
@@ -52,7 +55,7 @@ namespace C__DE.Models
     {
         public override void GenerateIntermediateCode()
         {
-            // с переменной тоже, вся движуха в других операторах будет
+            //переменная где-то объявлена уже, так что ту ничего
         }
     }
 
@@ -254,6 +257,7 @@ namespace C__DE.Models
         public override void GenerateIntermediateCode()
         {
             //добавили переменную
+            MainVariable.IsConst = false;//не константа
             IntermediateCodeList.addVar(MainVariable);
         }
     }
