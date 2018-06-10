@@ -291,7 +291,7 @@ namespace C__DE.Models
 
     }
 
-    //копирование графов (можно постараться разбить на более мелкие узды)
+    //копирование графов (можно постараться разбить на более мелкие узлы)
     public partial class CopyGraphsInterNode: IntermediateCodeNode
     {
         public Variable outGraph;
@@ -300,6 +300,16 @@ namespace C__DE.Models
         {
             outGraph = Out;
             inGraph = In;
+        }
+    }
+
+    //Запуск алгоритма Флойда
+    public partial class FloydCall: IntermediateCodeNode
+    {
+        public Variable graph;
+        public FloydCall(Variable v)
+        {
+            graph = v;
         }
     }
 

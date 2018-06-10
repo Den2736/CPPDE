@@ -1332,6 +1332,7 @@ namespace CPPDE
                 OperationsWithGraphs.Add("GetEdge", 4); //граф, вершина 1, вершина 2, переменная с результатом
                 OperationsWithGraphs.Add("SetEdge", 4); //то же самое, только последнее может быть любым выражением
                 OperationsWithGraphs.Add("CopyGraph", 2); //сначала куда, потом откуда. Графы должны быть созданы и одинаковой размерности
+                OperationsWithGraphs.Add("Floyd", 2);
             }
 
             //парсинг операций с графами
@@ -1339,6 +1340,8 @@ namespace CPPDE
             {
                 Lexeme CurrentLexeme = GetLexeme();
                 Lexeme Function = CurrentLexeme;
+                LexemesIterator++;
+                
                 try
                 {
                     GetConcreteLexeme("(");
@@ -1348,6 +1351,7 @@ namespace CPPDE
                 {
                     Console.WriteLine(e.Message);
                 }
+                CurrentLexeme = GetLexeme();
                 if (ReservedWords.Contains(CurrentLexeme.Value) || !char.IsLetter(CurrentLexeme.Value[0]) || Types.Contains(CurrentLexeme.Value))
                     throw new UnexpectedTokenException(CurrentLexeme.Line, CurrentLexeme.Value);
                 //первый параметр всегда имя графа
@@ -1421,6 +1425,11 @@ namespace CPPDE
                     case ("CopyGraph"):
                         {
                             NodesStack.Peek().AddOperator(new CopyGraph(Graph, Parameters[0], Function.Line));
+                            break;
+                        }
+                    case ("Floyd"):
+                        {
+                            NodesStack.Peek().AddOperator(new FloydNode(Graph, Parameters[0], Function.Line));
                             break;
                         }
                     default:

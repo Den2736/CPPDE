@@ -934,16 +934,6 @@ namespace C__DE.Models
         {
             IsSemanticCorrect = true;
             MainVariable = new Variable();
-            try
-            {
-                IsSemanticCorrect &= AssignedVariable.SemanticAnalysis();
-                MainVariable = AssignedVariable.MainVariable;
-            }
-            catch(SemanticException e)
-            {
-                Console.WriteLine(e.Message);
-                IsSemanticCorrect = false;
-            }
 
             try
             {
@@ -956,10 +946,21 @@ namespace C__DE.Models
                 IsSemanticCorrect = false;
             }
 
-            AssignedVariable.MainVariable.WasNewValueUsed = false;
-            AssignedVariable.MainVariable.WasAssignedNewValue = LineNumber;
-            AssignedVariable.MainVariable.WasUsed = true;
-            AssignedVariable.MainVariable.WasIdentified = true;
+            try
+            {
+                IsSemanticCorrect &= AssignedVariable.SemanticAnalysis();
+                MainVariable = AssignedVariable.MainVariable;
+                AssignedVariable.MainVariable.WasNewValueUsed = false;
+                AssignedVariable.MainVariable.WasAssignedNewValue = LineNumber;
+                AssignedVariable.MainVariable.WasUsed = true;
+                AssignedVariable.MainVariable.WasIdentified = true;
+
+            }
+            catch (SemanticException e)
+            {
+                Console.WriteLine(e.Message);
+                IsSemanticCorrect = false;
+            }
 
             if (IsSemanticCorrect)
                 try

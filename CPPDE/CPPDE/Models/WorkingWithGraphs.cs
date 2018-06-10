@@ -156,13 +156,13 @@ namespace C__DE.Models
     {
         public int NumVertecies; //число вершин в графе
         public int numGraph; //номер данного графа в программе
-
-
+        //число вершин
         public AtomNode InputVar;
+        //Граф
+        public VariableNode graph;
         public CreatingGraphNode(VariableNode newGraph, AtomNode vertecies, int numLine)
         {
-            MainVariable = newGraph.MainVariable;
-            MainVariable.Type = "graph";
+            graph = newGraph;
             InputVar = vertecies;
             LineNumber = numLine;
         }
@@ -171,6 +171,7 @@ namespace C__DE.Models
         {
             parentBlock = Parent;
             InputVar.SetParentBlock(Parent);
+            graph.SetParentBlock(Parent);
         }
 
         public override string CanCreateGraph()
@@ -181,12 +182,16 @@ namespace C__DE.Models
         public override bool SemanticAnalysis()
         {
             //По сути, создавая граф, мы объявляем новую переменную тип graph
+            MainVariable = new Variable();
             numGraph = ++Counters.graphs;
-            MainVariable.AlternativeName = "graph_" + (++Counters.graphs).ToString();
+            MainVariable.AlternativeName = "graph_" + (numGraph).ToString();
             MainVariable.IsDeclared = true;
             MainVariable.WasIdentified = true; //переменная объявлена и идентифицирована
             MainVariable.WasNewValueUsed = false;
             MainVariable.WasUsed = false;
+            MainVariable.Name = graph.Value;
+            MainVariable.DeclaredLine = LineNumber;
+            MainVariable.Type = "graph";
             try
             {
                 Variable possibleVariable = parentBlock.BlockVariables.FirstOrDefault(var => var.Name == MainVariable.Name);
@@ -198,6 +203,7 @@ namespace C__DE.Models
                 }
                 parentBlock.BlockVariables.Add(MainVariable); //помещаем в список переменных данного блока
                 IsSemanticCorrect = true;
+                graph.SemanticAnalysis();
             }
             catch (SemanticException e)
             {
@@ -532,6 +538,70 @@ namespace C__DE.Models
         public override void GenerateIntermediateCode()
         {
             IntermediateCodeList.push(new CopyGraphsInterNode(outGraph.MainVariable, inGraph.MainVariable));
+        }
+    }
+
+    public class FloydNode: AtomNode
+    {
+        public VariableNode outGraph;
+        public AtomNode inGraph;
+
+        public FloydNode(VariableNode First, AtomNode Second, int Line)
+        {
+            outGraph = First;
+            inGraph = Second;
+            LineNumber = Line;
+        }
+
+        public override void SetParentBlock(BlockNode Parent)
+        {
+            parentBlock = Parent;
+            outGraph.SetParentBlock(Parent);
+            inGraph.SetParentBlock(Parent);
+        }
+
+        public override string CanCreateGraph()
+        {
+            return "";
+        }
+
+        public override bool SemanticAnalysis()
+        {
+            try
+            {
+                IsSemanticCorrect = outGraph.SemanticAnalysis();
+                if (outGraph.MainVariable.Type != "graph")
+                    throw new WrongOperandTypeException(LineNumber, "Floyd", 1, "graph");
+            }
+            catch (SemanticException e)
+            {
+                Console.WriteLine(e.Message);
+                IsSemanticCorrect = false;
+            }
+
+            try
+            {
+                IsSemanticCorrect &= inGraph.SemanticAnalysis();
+                if (inGraph.MainVariable.Type != "graph" || (inGraph.TypeOfNode != NodeType.Variable))
+                    throw new WrongOperandTypeException(LineNumber, "Floyd", 2, "graph");
+                if (inGraph.IsSemanticCorrect && outGraph.IsSemanticCorrect) //ещё надо сравнить размерности
+                    if (int.Parse(inGraph.MainVariable.Value) != int.Parse(outGraph.MainVariable.Value)) //если не равны
+                        throw new UnequalGraphsDimentionsException(LineNumber, outGraph.MainVariable.Name, inGraph.MainVariable.Name);
+
+            }
+            catch (SemanticException e)
+            {
+                Console.WriteLine(e.Message);
+                IsSemanticCorrect = false;
+            }
+            return IsSemanticCorrect;
+        }
+
+        public override void GenerateIntermediateCode()
+        {
+            IntermediateCodeList.push(new CopyGraphsInterNode(outGraph.MainVariable, inGraph.MainVariable));
+            IntermediateCodeList.push(new FloydCall(outGraph.MainVariable));
+            GeneratingAssembleCode.WasFloydUsed = true;
         }
     }
 }

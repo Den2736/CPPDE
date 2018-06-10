@@ -363,9 +363,20 @@ namespace C__DE.Models
         }
     }
 
+    public partial class FloydCall
+    {
+        public override void GenerateAsmCode()
+        {
+            GeneratingAssembleCode.outFile.WriteLine("invoke Floyd, ADDR {0}, {1}", graph.AlternativeName, graph.Value);
+        }
+    }
+
     public static class GeneratingAssembleCode
     {
         public static StreamWriter outFile = new StreamWriter("assemble_code.asm");
+
+        //показывает, используется ли где-нибудь алгоритм Флойда (если нет, то код для него генерироваться не будет)
+        public static bool WasFloydUsed = false;
 
         //объявление переменной в сегменте данных (временные переменные будут тут же!)
         public static void PutVariable(Variable v)
@@ -399,6 +410,124 @@ namespace C__DE.Models
                 outFile.WriteLine("db {0} dup(0)", int.Parse(v.Value));
         }
 
+        //Алгоритм Флойда
+        public static void MakeFloydFunction()
+        {
+            outFile.WriteLine(";Алгоритм Флойда");
+            //параметры - указатель на граф и размерность графа
+            outFile.WriteLine("Floyd proc graph_pointer: DWORD, graph_dim: DWORD");
+            //тут поместить в стек какие-то регистры
+
+            //объяыляем локальные переменные - счётчики циклов
+            outFile.WriteLine("LOCAL i:DWORD");
+            outFile.WriteLine("LOCAL j:DWORD");
+            outFile.WriteLine("LOCAL k:DWORD");
+            //вспомогательная переменная
+            outFile.WriteLine("LOCAL temp_var: DWORD");
+            //загрузили адрес графа
+            outFile.WriteLine("mov esi, graph_pointer");
+
+            //дальше пошли итерации
+            outFile.WriteLine("mov k,0");
+            //внешний цикл пошёл
+            outFile.WriteLine("Floyd_cycle_1:");
+            //сравнить итератор внешего цикла
+            outFile.WriteLine("cmp k, ebx");
+            //если дошли, то на выход
+            outFile.WriteLine("je Floyd_exit_cycle_1");
+            //-------------Начало среднего цикла
+
+            //Аналогично с внуренними циклами
+            outFile.WriteLine("mov i,0");
+            //средний цикл
+            outFile.WriteLine("Floyd_cycle_2:");
+            //сравнить итератор внешего цикла
+            outFile.WriteLine("cmp i, ebx");
+            //если дошли, то на выход
+            outFile.WriteLine("je Floyd_exit_cycle_2");
+
+            //----------Начало самого внутреннего цикла
+            outFile.WriteLine("mov j,0");
+            //средний цикл
+            outFile.WriteLine("Floyd_cycle_3:");
+            //сравнить итератор внешего цикла
+            outFile.WriteLine("cmp j, ebx");
+            //если дошли, то на выход
+            outFile.WriteLine("je Floyd_exit_cycle_3");
+
+            //Собственно обработка
+            //Вычисляем [i,k] ячейку
+            outFile.WriteLine("mov eax, i");
+            outFile.WriteLine("mul graph_dim");
+            outFile.WriteLine("add eax, k");
+            outFile.WriteLine("mul 4"); //теперь в eax смещение
+            outFile.WriteLine("cmp [esi+eax], -1");//если равно, то ребра нет
+            outFile.WriteLine("je Floyd_next");
+            //поместить во временную переменную
+            outFile.WriteLine("mov eax, [esi+eax]");
+            outFile.WriteLine("mov temp_var, eax");
+            //Аналогично считаем ячейку [k,j]
+            outFile.WriteLine("mov eax, k");
+            outFile.WriteLine("mul graph_dim");
+            outFile.WriteLine("add eax, j");
+            outFile.WriteLine("mul 4"); //теперь в eax смещение
+            outFile.WriteLine("cmp [esi+eax], -1");//если равно, то ребра нет
+            outFile.WriteLine("je Floyd_next");
+            //Добавляем в сумму
+            outFile.WriteLine("mov eax, [esi+eax]");
+            outFile.WriteLine("add temp_var, eax");// теперь в temp_var сумма [i,k] и [k,j] ребра
+            //Сюда дойдём если всё хорошо
+            //Теперь результирующая ячейка [i,j]
+            outFile.WriteLine("mov eax, i");
+            outFile.WriteLine("mul graph_dim");
+            outFile.WriteLine("add eax, j");
+            outFile.WriteLine("mul 4"); //теперь в eax смещение
+            outFile.WriteLine("cmp [esi+eax], -1");//если равно, то ребра нет, его можно добавить
+            outFile.WriteLine("mov ebx, temp_var");//сразу записали сумму в ebx
+            outFile.WriteLine("jne Floyd_next_check");//если не равно идём дальше
+            //Если равно, то ребро нужно добавить
+            outFile.WriteLine("mov [esi+eax], ebx");
+            //И идём дальше
+            outFile.WriteLine("jmp Floyd_next");
+            //тут будем проверять длину
+            outFile.WriteLine("Floyd_next_check:");
+            outFile.WriteLine("cmp [esi+eax], ebx");
+            //если текущее расстояние не больше, то на следующую итераци
+            outFile.WriteLine("jbe Floyd_next");
+            //иначе записываем
+            outFile.WriteLine("mov [esi+eax], ebx");
+
+            //---------Конец внутреннего цикла
+            //Переход на следующую итерацию
+            outFile.WriteLine("Floyd_next:");
+            //увеличить номер итерации на 1
+            outFile.WriteLine("inc j");
+            //Отправляемся на проверку условия
+            outFile.WriteLine("jmp Floyd_Cycle_3");
+            //выход из среднего цикла
+            outFile.WriteLine("Floyd_exit_cycle_3:");
+
+            //----------Конец среднего цикла
+            //увеличить номер итерации на 1
+            outFile.WriteLine("inc i");
+            //Отправляемся на проверку условия
+            outFile.WriteLine("jmp Floyd_Cycle_2");
+            //выход из среднего цикла
+            outFile.WriteLine("Floyd_exit_cycle_2:");
+
+            //-------Конец внешнего цикла
+            //увеличить номер итерации на 1
+            outFile.WriteLine("inc k");
+            //Отправляемся на проверку условия
+            outFile.WriteLine("jmp Floyd_Cycle_1");
+            //выход из внешнего цикла
+            outFile.WriteLine("Floyd_exit_cycle_1:");
+
+            outFile.WriteLine("ret");
+            outFile.WriteLine("Floyd endp");
+
+        }
+
         public static void Generate()
         {
             //начало файла
@@ -407,8 +536,11 @@ namespace C__DE.Models
             outFile.WriteLine("option casemap :none");
             outFile.WriteLine("include \\masm32\\include\\windows.inc");
             outFile.WriteLine("include \\masm32\\macros\\macros.asm");
+            //для ввода-вывода
             outFile.WriteLine("includelib \\masm32\\lib\\msvcrt.lib");
             outFile.WriteLine("uselib kernel32, user32, masm32, comctl32");
+            if (WasFloydUsed)
+                outFile.WriteLine("Floyd PROTO :DWORD, :DWORD");
             //начало сегмента данных
             outFile.WriteLine(".data");
             //буфер для чтения
@@ -426,6 +558,9 @@ namespace C__DE.Models
                 PutVariable(v);
             //дальше код
             outFile.WriteLine(".code");
+            //если Флойд используется, то генерим код для процедуры
+            if (WasFloydUsed)
+                MakeFloydFunction();
             outFile.WriteLine("start:");
             foreach (var node in IntermediateCodeList.IntermediateList)
                 node.GenerateAsmCode();

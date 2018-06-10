@@ -1,0 +1,3 @@
+CreateGraph(a,4);
+CreateGraph(b, 2+2);
+Floyd(b,a);
