@@ -63,7 +63,7 @@ namespace C__DE.Models
     {
         public override void GenerateIntermediateCode()
         {
-            MainVariable.AlternativeName = (++Counters.temps).ToString(); //присваиваем временной переменной имя 
+            MainVariable.AlternativeName = "temp_"+(++Counters.temps).ToString(); //присваиваем временной переменной имя 
             IntermediateCodeList.addVar(MainVariable); //временную переменную - в список переменных
             //вот тут самое веселье
             if (IsUnary)
@@ -351,8 +351,14 @@ namespace C__DE.Models
     {
         public override void GenerateIntermediateCode()
         {
+            RightPart.GenerateIntermediateCode();
             switch (AssignmentOperation)
             {
+                case ("="):
+                    {
+                        IntermediateCodeList.push(new AssignmentInterNode(RightPart.MainVariable, MainVariable));
+                        break;
+                    }
                 case ("+="):
                     {
                         IntermediateCodeList.push(new AddInterNode(AssignedVariable.MainVariable, RightPart.MainVariable, AssignedVariable.MainVariable));
@@ -414,6 +420,8 @@ namespace C__DE.Models
     {
         public override void GenerateIntermediateCode()
         {
+            //тут может быть выражение
+            WriteVariable.GenerateIntermediateCode();
             IntermediateCodeList.push(new WriteVarInterNode(MainVariable));
         }
     }

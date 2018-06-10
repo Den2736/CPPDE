@@ -14,7 +14,8 @@ namespace CPPDE
 {
     partial class Program
     {
-
+        //если будет синтаксическая ошибка, будет false
+        public static bool IsSyntaxCorrect = true;
 
         //Одна лексема
         public class Lexeme
@@ -1322,7 +1323,7 @@ namespace CPPDE
             }
 
             //Дальше пойдут графы
-            public static Dictionary<string, int> OperationsWithGraphs; //операции с графами оформлены в виде функций, ключ- функция, значение - количество параметров
+            public static Dictionary<string, int> OperationsWithGraphs=new Dictionary<string, int>(); //операции с графами оформлены в виде функций, ключ- функция, значение - количество параметров
 
             //установка количества параметроф функций с графами (будет обновляться)
             public static void GetGraphFunctions()
@@ -1404,7 +1405,22 @@ namespace CPPDE
                 {
                     case ("CreateGraph"):
                         {
-                            NodesStack.Peek().AddOperator(new CreatingGraphNode(Graph.MainVariable.Name, Parameters[0], Function.Line));
+                            NodesStack.Peek().AddOperator(new CreatingGraphNode(Graph, Parameters[0], Function.Line));
+                            break;
+                        }
+                    case ("SetEdge"):
+                        {
+                            NodesStack.Peek().AddOperator(new SetEdgeNode(Graph, Parameters[0], Parameters[1], Function.Line, Parameters[2]));
+                            break;
+                        }
+                    case ("GetEdge"):
+                        {
+                            NodesStack.Peek().AddOperator(new GetEdgeNode(Graph, Parameters[0], Parameters[1], Function.Line, Parameters[2]));
+                            break;
+                        }
+                    case ("CopyGraph"):
+                        {
+                            NodesStack.Peek().AddOperator(new CopyGraph(Graph, Parameters[0], Function.Line));
                             break;
                         }
                     default:

@@ -41,7 +41,7 @@ namespace C__DE.Models
         {
             GeneratingAssembleCode.outFile.WriteLine("mov eax, {0}", FirstOperand.AlternativeName);
             GeneratingAssembleCode.outFile.WriteLine("mov ebx, {0}", SecondOperand.AlternativeName);
-            GeneratingAssembleCode.outFile.WriteLine("mul ebx");
+            GeneratingAssembleCode.outFile.WriteLine("imul ebx");
             //если переполнение - отсекаем всё, что вывалилось
             GeneratingAssembleCode.outFile.WriteLine("mov {0}, eax", result.AlternativeName);
         }
@@ -227,22 +227,23 @@ namespace C__DE.Models
     {
         public override void GenerateAsmCode()
         {
-            //получение дескрипторов (надеюсь, будет работать)
+            /*//получение дескрипторов (надеюсь, будет работать)
             GeneratingAssembleCode.outFile.WriteLine("invoke GetStdHandle, STD_INPUT_HANDLE");
             GeneratingAssembleCode.outFile.WriteLine("mov stdin, eax");
             //считывание числа как последовательности символов
             GeneratingAssembleCode.outFile.WriteLine("ReadConsole, stdin, ADDR buf, 20, ADDR cRead, NULL");
             //превращаем символ в число
-            GeneratingAssembleCode.outFile.WriteLine("invoke crt_atoi, ADDR buf");
+            GeneratingAssembleCode.outFile.WriteLine("invoke crt_atoi, ADDR buf");*/
             if (variable.Type=="int")
             {
-                //просто помещаем результат в переменнную
-                GeneratingAssembleCode.outFile.WriteLine("mov {0}, eax", variable.AlternativeName);
+                //считали число
+                GeneratingAssembleCode.outFile.WriteLine("invoke  crt_scanf, ADDR Format_in, ADDR {0}", variable.AlternativeName);
             }
             else if (variable.Type=="bool")
             {
+                GeneratingAssembleCode.outFile.WriteLine("invoke  crt_scanf, ADDR Format_in, ADDR {0}", variable.AlternativeName);
                 //тут посложнее, если ввели 0, то false, если что-то другое - true
-                GeneratingAssembleCode.outFile.WriteLine("cmp eax,0");
+                GeneratingAssembleCode.outFile.WriteLine("cmp {0},0", variable.AlternativeName);
                 string label = "comp_label_" + (++Counters.comparsions);
                 GeneratingAssembleCode.outFile.WriteLine("jne {0}", label);
                 GeneratingAssembleCode.outFile.WriteLine("mov {0}, 0", variable.AlternativeName);
@@ -258,18 +259,107 @@ namespace C__DE.Models
     {
         public override void GenerateAsmCode()
         {
+            /*//доделаю потом если время останется
             //получение дескрипторов (надеюсь, будет работать)
             GeneratingAssembleCode.outFile.WriteLine("invoke GetStdHandle, STD_OUTPUT_HANDLE");
-            GeneratingAssembleCode.outFile.WriteLine("mov stdout, eax");
+            GeneratingAssembleCode.outFile.WriteLine("mov stdout, eax");*/
             if (variable.Type == "int")
             {
                 //просто выводим на экран
-                GeneratingAssembleCode.outFile.WriteLine("")
+                GeneratingAssembleCode.outFile.WriteLine("invoke  crt_printf, ADDR Format_out, {0}", variable.AlternativeName);
             }
             else if (variable.Type == "bool")
             {
-               GeneratingAssembleCode.outFile.WriteLine(". IF")
+                //если ложь выводим 0, если истина выводим 1
+                GeneratingAssembleCode.outFile.WriteLine("cmp {0},0", variable.AlternativeName);
+                string label = "comp_label_" + (++Counters.comparsions);
+                GeneratingAssembleCode.outFile.WriteLine("jne {0}", label);
+                GeneratingAssembleCode.outFile.WriteLine("mov eax, 0", variable.AlternativeName);
+                GeneratingAssembleCode.outFile.WriteLine("jmp exit_{0}", label);
+                GeneratingAssembleCode.outFile.WriteLine("{0}:", label);
+                GeneratingAssembleCode.outFile.WriteLine("mov eax, 1", variable.AlternativeName);
+                GeneratingAssembleCode.outFile.WriteLine("exit_{0}", label);
+                GeneratingAssembleCode.outFile.WriteLine("invoke  crt_printf, ADDR Format_out, eax");
             }
+        }
+    }
+
+    public partial class CreateGraphInterNode
+    {
+        //при создании графа занулить все диагональные элементы
+        public override void GenerateAsmCode()
+        {
+            //делаем цикл
+            GeneratingAssembleCode.outFile.WriteLine("mov ecx, {0}", graph.Value);
+            //Номер цикла (для метки)
+            int number = ++Counters.cycles;
+            //Загружаем начало графа
+            GeneratingAssembleCode.outFile.WriteLine("lea esi, {0}", graph.AlternativeName);
+            //ставим метку
+            GeneratingAssembleCode.outFile.WriteLine("cycle_{0}:", number);
+            //Зануляем ячейку
+            GeneratingAssembleCode.outFile.WriteLine("mov [esi], 0");
+            //Вычисляем следующую ячейку (по диагонали)
+            GeneratingAssembleCode.outFile.WriteLine("add esi, {0}", (int.Parse(graph.Value)+1)*4); //каждая ячейка 4 байтиа
+            //Идём на следующую итерацию
+            GeneratingAssembleCode.outFile.WriteLine("loop cycle_{0}:", number);
+        }
+    }
+
+    public partial class SetGraphCell
+    {
+        public override void GenerateAsmCode()
+        {
+            //получаем адрес графа
+            GeneratingAssembleCode.outFile.WriteLine("lea esi, {0}", Edge.graph.AlternativeName);
+            //получаем номер ячейки (Вершины нумеровать с 0)
+            GeneratingAssembleCode.outFile.WriteLine("mov eax, {0}",Edge.i.AlternativeName);
+            //тут все положительные, поэтому mul
+            GeneratingAssembleCode.outFile.WriteLine("mul {0}", int.Parse(Edge.graph.Value));
+            GeneratingAssembleCode.outFile.WriteLine("add eax, {0}", Edge.j.AlternativeName);
+            GeneratingAssembleCode.outFile.WriteLine("mul 4");
+            GeneratingAssembleCode.outFile.WriteLine("add esi, eax");
+            //Теперь в esi адрес требуемой ячейки
+            GeneratingAssembleCode.outFile.WriteLine("mov eax, {0}", InputVar.AlternativeName);
+            GeneratingAssembleCode.outFile.WriteLine("mov [esi], eax");
+        }
+    }
+
+    public partial class GetGraphCell
+    {
+        public override void GenerateAsmCode()
+        {
+            //получаем адрес графа
+            GeneratingAssembleCode.outFile.WriteLine("lea esi, {0}", Edge.graph.AlternativeName);
+            //получаем номер ячейки (Вершины нумеровать с 0)
+            GeneratingAssembleCode.outFile.WriteLine("mov eax, {0}", Edge.i.AlternativeName);
+            //тут все положительные, поэтому mul
+            GeneratingAssembleCode.outFile.WriteLine("mul {0}", int.Parse(Edge.graph.Value));
+            GeneratingAssembleCode.outFile.WriteLine("add eax, {0}", Edge.j.AlternativeName);
+            GeneratingAssembleCode.outFile.WriteLine("mul 4");
+            GeneratingAssembleCode.outFile.WriteLine("add esi, eax");
+            //Теперь в esi адрес требуемой ячейки
+            GeneratingAssembleCode.outFile.WriteLine("mov eax, [esi]");
+            GeneratingAssembleCode.outFile.WriteLine("mov {0}, eax", OutputVar.AlternativeName);
+        }
+    }
+
+    public partial class CopyGraphsInterNode
+    {
+        public override void GenerateAsmCode()
+        {
+            GeneratingAssembleCode.outFile.WriteLine("lea esi, {0}", inGraph);
+            GeneratingAssembleCode.outFile.WriteLine("lea ebx, {0}", outGraph);
+            //счётчик цикла
+            GeneratingAssembleCode.outFile.WriteLine("mov ecx, {0}", int.Parse(inGraph.Value)*int.Parse(inGraph.Value));
+            string label = "cycle_" + (++Counters.cycles).ToString();
+            GeneratingAssembleCode.outFile.WriteLine("{0}:", label);
+            GeneratingAssembleCode.outFile.WriteLine("mov eax, [esi]");
+            GeneratingAssembleCode.outFile.WriteLine("mov [ebx], eax");
+            //получаем следующие адреса
+            GeneratingAssembleCode.outFile.WriteLine("add esi, 4");
+            GeneratingAssembleCode.outFile.WriteLine("add ebx, 4");
+            GeneratingAssembleCode.outFile.WriteLine("loop {0}", label);
         }
     }
 
@@ -328,11 +418,21 @@ namespace C__DE.Models
             //для ввода-вывода
             outFile.WriteLine("stdin DWORD?");
             outFile.WriteLine("stdout DWORD?");
+            //для форматированного ввода-вывода
+            outFile.WriteLine("Format_in DB \"%d\",0");
+            outFile.WriteLine("Format_out DB \"%d\", 0Dh,0Ah,0");
             //объявляем все переменные
             foreach (var v in IntermediateCodeList.AllVariables)
                 PutVariable(v);
             //дальше код
             outFile.WriteLine(".code");
+            outFile.WriteLine("start:");
+            foreach (var node in IntermediateCodeList.IntermediateList)
+                node.GenerateAsmCode();
+            //конец файла
+            outFile.WriteLine("invoke ExitProcess, 0");
+            outFile.WriteLine("end start");
+            outFile.Close();
         }
     }
 }

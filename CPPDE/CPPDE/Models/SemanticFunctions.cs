@@ -937,9 +937,6 @@ namespace C__DE.Models
             try
             {
                 IsSemanticCorrect &= AssignedVariable.SemanticAnalysis();
-                AssignedVariable.MainVariable.WasNewValueUsed = false;
-                AssignedVariable.MainVariable.WasAssignedNewValue = LineNumber;
-                AssignedVariable.MainVariable.WasUsed = true;
                 MainVariable = AssignedVariable.MainVariable;
             }
             catch(SemanticException e)
@@ -958,6 +955,11 @@ namespace C__DE.Models
                 Console.WriteLine(e.Message);
                 IsSemanticCorrect = false;
             }
+
+            AssignedVariable.MainVariable.WasNewValueUsed = false;
+            AssignedVariable.MainVariable.WasAssignedNewValue = LineNumber;
+            AssignedVariable.MainVariable.WasUsed = true;
+            AssignedVariable.MainVariable.WasIdentified = true;
 
             if (IsSemanticCorrect)
                 try
@@ -1044,6 +1046,7 @@ namespace C__DE.Models
                 ReadVariable.MainVariable.WasNewValueUsed = false;
                 ReadVariable.MainVariable.WasUsed = true;
                 ReadVariable.MainVariable.WasAssignedNewValue = LineNumber;
+                MainVariable = ReadVariable.MainVariable;
             }
             catch (SemanticException e)
             {
@@ -1063,6 +1066,7 @@ namespace C__DE.Models
                 IsSemanticCorrect = WriteVariable.SemanticAnalysis();
                 WriteVariable.MainVariable.WasUsed = true;
                 WriteVariable.MainVariable.WasNewValueUsed = true;
+                MainVariable = WriteVariable.MainVariable;
                 if (!WriteVariable.MainVariable.WasIdentified)
                     throw new UnidentifiedVariableException(WriteVariable.LineNumber, WriteVariable.MainVariable.Name);
             }

@@ -359,7 +359,9 @@ namespace C__DE.Models
 
         public override void GenerateIntermediateCode()
         {
+            //граф будет неориентированный, поэтому добавляем в обе стороны
             IntermediateCodeList.push(new SetGraphCell(Res.MainVariable, new GraphCell(MainVariable, first.MainVariable, second.MainVariable)));
+            IntermediateCodeList.push(new SetGraphCell(Res.MainVariable, new GraphCell(MainVariable, second.MainVariable, first.MainVariable)));
         }
     }
 
@@ -476,7 +478,7 @@ namespace C__DE.Models
         public VariableNode outGraph;
         public AtomNode inGraph;
 
-        public CopyGraph(VariableNode First, VariableNode Second, int Line)
+        public CopyGraph(VariableNode First, AtomNode Second, int Line)
         {
             outGraph = First;
             inGraph = Second;

@@ -30,6 +30,7 @@ namespace C__DE.Models
         {
             FirstOperand = first;
             SecondOperand = second;
+            result = res;
         }
     }
 
@@ -254,7 +255,7 @@ namespace C__DE.Models
         }
     }
 
-    public class CreateGraphInterNode: IntermediateCodeNode
+    public partial class CreateGraphInterNode: IntermediateCodeNode
     {
         //по сути тут занулить диагональные элементы (все остальные равны минус 1)
         public Variable graph;
@@ -265,7 +266,7 @@ namespace C__DE.Models
     }
 
     //записать в ячейку графа информацию из некоторой переменной
-    public class SetGraphCell : IntermediateCodeNode
+    public partial class SetGraphCell : IntermediateCodeNode
     {
         public Variable InputVar;
         public GraphCell Edge;
@@ -278,7 +279,7 @@ namespace C__DE.Models
     }
 
     //Аналогично, только информация записывается из ячейки в переменную
-    public class GetGraphCell : IntermediateCodeNode
+    public partial class GetGraphCell : IntermediateCodeNode
     {
         public Variable OutputVar;
         public GraphCell Edge;
@@ -291,7 +292,7 @@ namespace C__DE.Models
     }
 
     //копирование графов (можно постараться разбить на более мелкие узды)
-    public class CopyGraphsInterNode: IntermediateCodeNode
+    public partial class CopyGraphsInterNode: IntermediateCodeNode
     {
         public Variable outGraph;
         public Variable inGraph;
