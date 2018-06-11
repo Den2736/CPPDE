@@ -199,8 +199,16 @@ namespace C__DE.Models
     {
         public override void GenerateAsmCode()
         {
-            GeneratingAssembleCode.outFile.WriteLine("mov eax, {0}", FirstOperand.AlternativeName);
-            GeneratingAssembleCode.outFile.WriteLine("cmp eax, {0}", SecondOperand.AlternativeName);
+            if (FirstOperand.Type=="int")
+            {
+                GeneratingAssembleCode.outFile.WriteLine("mov eax, {0}", FirstOperand.AlternativeName);
+                GeneratingAssembleCode.outFile.WriteLine("cmp eax, {0}", SecondOperand.AlternativeName);
+            }
+            else if (FirstOperand.Type=="bool")
+            {
+                GeneratingAssembleCode.outFile.WriteLine("mov al, {0}", FirstOperand.AlternativeName);
+                GeneratingAssembleCode.outFile.WriteLine("cmp al, {0}", SecondOperand.AlternativeName);
+            }
             //тут только сравниваем, переход - другой узел
         }
     }
@@ -298,11 +306,12 @@ namespace C__DE.Models
             //ставим метку
             GeneratingAssembleCode.outFile.WriteLine("cycle_{0}:", number);
             //Зануляем ячейку
-            GeneratingAssembleCode.outFile.WriteLine("mov [esi], 0");
+            GeneratingAssembleCode.outFile.WriteLine("mov ebx, 0");
+            GeneratingAssembleCode.outFile.WriteLine("mov [esi], ebx");
             //Вычисляем следующую ячейку (по диагонали)
             GeneratingAssembleCode.outFile.WriteLine("add esi, {0}", (int.Parse(graph.Value)+1)*4); //каждая ячейка 4 байтиа
             //Идём на следующую итерацию
-            GeneratingAssembleCode.outFile.WriteLine("loop cycle_{0}:", number);
+            GeneratingAssembleCode.outFile.WriteLine("loop cycle_{0}", number);
         }
     }
 
@@ -315,9 +324,11 @@ namespace C__DE.Models
             //получаем номер ячейки (Вершины нумеровать с 0)
             GeneratingAssembleCode.outFile.WriteLine("mov eax, {0}",Edge.i.AlternativeName);
             //тут все положительные, поэтому mul
-            GeneratingAssembleCode.outFile.WriteLine("mul {0}", int.Parse(Edge.graph.Value));
+            GeneratingAssembleCode.outFile.WriteLine("mov ebx, {0}", int.Parse(Edge.graph.Value));
+            GeneratingAssembleCode.outFile.WriteLine("mul ebx");
             GeneratingAssembleCode.outFile.WriteLine("add eax, {0}", Edge.j.AlternativeName);
-            GeneratingAssembleCode.outFile.WriteLine("mul 4");
+            GeneratingAssembleCode.outFile.WriteLine("mov ebx,4");
+            GeneratingAssembleCode.outFile.WriteLine("mul ebx");
             GeneratingAssembleCode.outFile.WriteLine("add esi, eax");
             //Теперь в esi адрес требуемой ячейки
             GeneratingAssembleCode.outFile.WriteLine("mov eax, {0}", InputVar.AlternativeName);
@@ -334,9 +345,11 @@ namespace C__DE.Models
             //получаем номер ячейки (Вершины нумеровать с 0)
             GeneratingAssembleCode.outFile.WriteLine("mov eax, {0}", Edge.i.AlternativeName);
             //тут все положительные, поэтому mul
-            GeneratingAssembleCode.outFile.WriteLine("mul {0}", int.Parse(Edge.graph.Value));
+            GeneratingAssembleCode.outFile.WriteLine("mov ebx, {0}", int.Parse(Edge.graph.Value));
+            GeneratingAssembleCode.outFile.WriteLine("mul ebx");
             GeneratingAssembleCode.outFile.WriteLine("add eax, {0}", Edge.j.AlternativeName);
-            GeneratingAssembleCode.outFile.WriteLine("mul 4");
+            GeneratingAssembleCode.outFile.WriteLine("mov ebx, 4");
+            GeneratingAssembleCode.outFile.WriteLine("mul ebx");
             GeneratingAssembleCode.outFile.WriteLine("add esi, eax");
             //Теперь в esi адрес требуемой ячейки
             GeneratingAssembleCode.outFile.WriteLine("mov eax, [esi]");
@@ -348,8 +361,8 @@ namespace C__DE.Models
     {
         public override void GenerateAsmCode()
         {
-            GeneratingAssembleCode.outFile.WriteLine("lea esi, {0}", inGraph);
-            GeneratingAssembleCode.outFile.WriteLine("lea ebx, {0}", outGraph);
+            GeneratingAssembleCode.outFile.WriteLine("lea esi, {0}", inGraph.AlternativeName);
+            GeneratingAssembleCode.outFile.WriteLine("lea ebx, {0}", outGraph.AlternativeName);
             //счётчик цикла
             GeneratingAssembleCode.outFile.WriteLine("mov ecx, {0}", int.Parse(inGraph.Value)*int.Parse(inGraph.Value));
             string label = "cycle_" + (++Counters.cycles).ToString();
@@ -389,16 +402,16 @@ namespace C__DE.Models
                 outFile.Write("dd");
                 if (v.IsConst)
                     outFile.WriteLine(" {0} ", v.Value); //инициализируем константу
-                else outFile.WriteLine("?");
+                else outFile.WriteLine(" ?");
             }
             else if (v.Type == "bool")
             {
-                outFile.WriteLine("db"); //для логической одного байта хватит
+                outFile.Write("db"); //для логической одного байта хватит
                 if (v.IsConst)
                     if (bool.Parse(v.Value))
                         outFile.WriteLine(" 127"); //true будет 127
                     else outFile.WriteLine(" 0");//false будет 0
-                else outFile.WriteLine("?"); //если не константа, то не инициализируем
+                else outFile.WriteLine(" ?"); //если не константа, то не инициализируем
             }
 
             //тут графы и массивы, констант как таковых не будет
@@ -424,9 +437,10 @@ namespace C__DE.Models
             outFile.WriteLine("LOCAL k:DWORD");
             //вспомогательная переменная
             outFile.WriteLine("LOCAL temp_var: DWORD");
-            //загрузили адрес графа
-            outFile.WriteLine("mov esi, graph_pointer");
-
+            
+            //Загрузили число вершин
+            outFile.WriteLine("mov ebx, graph_dim");
+            //------------Начало внешнего цикла
             //дальше пошли итерации
             outFile.WriteLine("mov k,0");
             //внешний цикл пошёл
@@ -456,46 +470,57 @@ namespace C__DE.Models
             outFile.WriteLine("je Floyd_exit_cycle_3");
 
             //Собственно обработка
+            //загрузили адрес графа
+            outFile.WriteLine("mov esi, graph_pointer");
             //Вычисляем [i,k] ячейку
             outFile.WriteLine("mov eax, i");
             outFile.WriteLine("mul graph_dim");
             outFile.WriteLine("add eax, k");
-            outFile.WriteLine("mul 4"); //теперь в eax смещение
-            outFile.WriteLine("cmp [esi+eax], -1");//если равно, то ребра нет
+            outFile.WriteLine("mov ecx, 4");
+            outFile.WriteLine("mul ecx"); //теперь в eax смещение для [i,k]
+
+            outFile.WriteLine("mov eax, [esi+eax]");//в eax содержимое ячейки [i,k]
+            outFile.WriteLine("cmp eax, -1");//если равно, то ребра нет
             outFile.WriteLine("je Floyd_next");
             //поместить во временную переменную
-            outFile.WriteLine("mov eax, [esi+eax]");
             outFile.WriteLine("mov temp_var, eax");
             //Аналогично считаем ячейку [k,j]
             outFile.WriteLine("mov eax, k");
             outFile.WriteLine("mul graph_dim");
             outFile.WriteLine("add eax, j");
-            outFile.WriteLine("mul 4"); //теперь в eax смещение
-            outFile.WriteLine("cmp [esi+eax], -1");//если равно, то ребра нет
+            outFile.WriteLine("mov ecx, 4");
+            outFile.WriteLine("mul ecx"); //теперь в eax смещение
+            
+            outFile.WriteLine("mov eax, [esi+eax]");//в eax содержимое ячейки
+            outFile.WriteLine("cmp eax, -1");//если равно, то ребра нет
             outFile.WriteLine("je Floyd_next");
             //Добавляем в сумму
-            outFile.WriteLine("mov eax, [esi+eax]");
             outFile.WriteLine("add temp_var, eax");// теперь в temp_var сумма [i,k] и [k,j] ребра
             //Сюда дойдём если всё хорошо
             //Теперь результирующая ячейка [i,j]
             outFile.WriteLine("mov eax, i");
             outFile.WriteLine("mul graph_dim");
             outFile.WriteLine("add eax, j");
-            outFile.WriteLine("mul 4"); //теперь в eax смещение
-            outFile.WriteLine("cmp [esi+eax], -1");//если равно, то ребра нет, его можно добавить
-            outFile.WriteLine("mov ebx, temp_var");//сразу записали сумму в ebx
+            outFile.WriteLine("mov ecx, 4");
+            outFile.WriteLine("mul ecx"); //теперь в eax смещение [i,j]
+            outFile.WriteLine("mov ecx, temp_var");//сразу записали сумму в ecx
+            outFile.WriteLine("add esi, eax");//в esi адрес ячейки [i,j]
+            outFile.WriteLine("mov eax, [esi]");//в eax содержимое ячейки [i,j]
+            outFile.WriteLine("cmp eax, -1");//если равно, то ребра нет, его можно добавить
+
             outFile.WriteLine("jne Floyd_next_check");//если не равно идём дальше
             //Если равно, то ребро нужно добавить
-            outFile.WriteLine("mov [esi+eax], ebx");
+            
+            outFile.WriteLine("mov [esi], ecx");
             //И идём дальше
             outFile.WriteLine("jmp Floyd_next");
             //тут будем проверять длину
             outFile.WriteLine("Floyd_next_check:");
-            outFile.WriteLine("cmp [esi+eax], ebx");
-            //если текущее расстояние не больше, то на следующую итераци
+            outFile.WriteLine("cmp [esi], ecx");
+            //если текущее расстояние не больше, то на следующую итерацию
             outFile.WriteLine("jbe Floyd_next");
             //иначе записываем
-            outFile.WriteLine("mov [esi+eax], ebx");
+            outFile.WriteLine("mov [esi], ecx");
 
             //---------Конец внутреннего цикла
             //Переход на следующую итерацию
@@ -503,7 +528,7 @@ namespace C__DE.Models
             //увеличить номер итерации на 1
             outFile.WriteLine("inc j");
             //Отправляемся на проверку условия
-            outFile.WriteLine("jmp Floyd_Cycle_3");
+            outFile.WriteLine("jmp Floyd_cycle_3");
             //выход из среднего цикла
             outFile.WriteLine("Floyd_exit_cycle_3:");
 
@@ -511,7 +536,7 @@ namespace C__DE.Models
             //увеличить номер итерации на 1
             outFile.WriteLine("inc i");
             //Отправляемся на проверку условия
-            outFile.WriteLine("jmp Floyd_Cycle_2");
+            outFile.WriteLine("jmp Floyd_cycle_2");
             //выход из среднего цикла
             outFile.WriteLine("Floyd_exit_cycle_2:");
 
@@ -519,12 +544,18 @@ namespace C__DE.Models
             //увеличить номер итерации на 1
             outFile.WriteLine("inc k");
             //Отправляемся на проверку условия
-            outFile.WriteLine("jmp Floyd_Cycle_1");
+            outFile.WriteLine("jmp Floyd_cycle_1");
             //выход из внешнего цикла
             outFile.WriteLine("Floyd_exit_cycle_1:");
 
             outFile.WriteLine("ret");
             outFile.WriteLine("Floyd endp");
+
+        }
+
+        //поиск в глубину
+        public static void MakeDFSFunction()
+        {
 
         }
 
@@ -535,7 +566,10 @@ namespace C__DE.Models
             outFile.WriteLine(".model flat, stdcall");
             outFile.WriteLine("option casemap :none");
             outFile.WriteLine("include \\masm32\\include\\windows.inc");
+            outFile.WriteLine("include \\masm32\\include\\masm32.inc");
+            outFile.WriteLine("include \\masm32\\include\\msvcrt.inc");
             outFile.WriteLine("include \\masm32\\macros\\macros.asm");
+            outFile.WriteLine("includelib \\masm32\\lib\\masm32.lib");
             //для ввода-вывода
             outFile.WriteLine("includelib \\masm32\\lib\\msvcrt.lib");
             outFile.WriteLine("uselib kernel32, user32, masm32, comctl32");
@@ -546,10 +580,10 @@ namespace C__DE.Models
             //буфер для чтения
             outFile.WriteLine("buf db 128 dup(?)");
             //счётчик считанных символов для буфера
-            outFile.WriteLine("cRead dd?");
+            outFile.WriteLine("cRead dd ?");
             //для ввода-вывода
-            outFile.WriteLine("stdin DWORD?");
-            outFile.WriteLine("stdout DWORD?");
+            outFile.WriteLine("stdin DWORD ?");
+            outFile.WriteLine("stdout DWORD ?");
             //для форматированного ввода-вывода
             outFile.WriteLine("Format_in DB \"%d\",0");
             outFile.WriteLine("Format_out DB \"%d\", 0Dh,0Ah,0");

@@ -560,7 +560,7 @@ namespace C__DE.Models
                                 {
                                     if (FirstOperand.MainVariable.Type != "int" || SecondOperand.MainVariable.Type != "int")
                                         throw new IncompatibleTypesException(LineNumber, FirstOperand.MainVariable.Type, SecondOperand.MainVariable.Type);
-                                    MainVariable.Type = "int";
+                                    MainVariable.Type = "bool";
                                     break;
                                 }
                             case NodeType.BitOperator:

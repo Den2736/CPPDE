@@ -1,3 +1,0 @@
-int a,b;
-scan(a,b)
-print(a+b);

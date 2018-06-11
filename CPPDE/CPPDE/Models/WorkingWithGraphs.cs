@@ -256,6 +256,7 @@ namespace C__DE.Models
         public override void GenerateIntermediateCode()
         {
             IntermediateCodeList.addVar(MainVariable);
+            IntermediateCodeList.push(new CreateGraphInterNode(MainVariable));
         }
     }
 
@@ -343,8 +344,8 @@ namespace C__DE.Models
                     IsSemanticCorrect &= Res.SemanticAnalysis();
                     Res.MainVariable.WasUsed = true;
                     Res.MainVariable.WasNewValueUsed = false;
-                    if (Res.TypeOfNode != NodeType.Variable)
-                        throw new WrongOperandTypeException(LineNumber, "SetEdge", 4, "int variable");
+                    if (Res.MainVariable.Type!="int")
+                        throw new WrongOperandTypeException(LineNumber, "SetEdge", 4, "int");
                     if (!Res.MainVariable.WasIdentified)
                         throw new UnidentifiedVariableException(LineNumber, Res.MainVariable.Name);
                 }
@@ -366,8 +367,8 @@ namespace C__DE.Models
         public override void GenerateIntermediateCode()
         {
             //граф будет неориентированный, поэтому добавляем в обе стороны
-            IntermediateCodeList.push(new SetGraphCell(Res.MainVariable, new GraphCell(MainVariable, first.MainVariable, second.MainVariable)));
-            IntermediateCodeList.push(new SetGraphCell(Res.MainVariable, new GraphCell(MainVariable, second.MainVariable, first.MainVariable)));
+            IntermediateCodeList.push(new SetGraphCell(Res.MainVariable, new GraphCell(graph.MainVariable, first.MainVariable, second.MainVariable)));
+            IntermediateCodeList.push(new SetGraphCell(Res.MainVariable, new GraphCell(graph.MainVariable, second.MainVariable, first.MainVariable)));
         }
     }
 
@@ -454,6 +455,7 @@ namespace C__DE.Models
                         IsSemanticCorrect &= Res.SemanticAnalysis();
                         Res.MainVariable.WasUsed = true;
                         Res.MainVariable.WasNewValueUsed = false;
+                        Res.MainVariable.WasIdentified = true;
                         if (Res.TypeOfNode != NodeType.Variable)
                             throw new WrongOperandTypeException(LineNumber, "GetEdge", 4, "int variable");
                     }
@@ -474,7 +476,7 @@ namespace C__DE.Models
 
             public override void GenerateIntermediateCode()
             {
-                IntermediateCodeList.push(new GetGraphCell(Res.MainVariable, new GraphCell(MainVariable, first.MainVariable, second.MainVariable)));
+                IntermediateCodeList.push(new GetGraphCell(Res.MainVariable, new GraphCell(graph.MainVariable, first.MainVariable, second.MainVariable)));
             }
         }
 
@@ -508,6 +510,9 @@ namespace C__DE.Models
             try
             {
                 IsSemanticCorrect = outGraph.SemanticAnalysis();
+                outGraph.MainVariable.WasUsed = true;
+                outGraph.MainVariable.WasNewValueUsed = false;
+                outGraph.MainVariable.WasAssignedNewValue = LineNumber;
                 if (outGraph.MainVariable.Type != "graph")
                     throw new WrongOperandTypeException(LineNumber, "CopyGraph", 1, "graph");
             }
@@ -520,6 +525,8 @@ namespace C__DE.Models
             try
             {
                 IsSemanticCorrect &= inGraph.SemanticAnalysis();
+                inGraph.MainVariable.WasUsed = true;
+                inGraph.MainVariable.WasNewValueUsed = true;
                 if (inGraph.MainVariable.Type != "graph" || (inGraph.TypeOfNode != NodeType.Variable))
                     throw new WrongOperandTypeException(LineNumber, "CopyGraph", 2, "graph");
                 if (inGraph.IsSemanticCorrect && outGraph.IsSemanticCorrect) //ещё надо сравнить размерности
@@ -570,6 +577,9 @@ namespace C__DE.Models
             try
             {
                 IsSemanticCorrect = outGraph.SemanticAnalysis();
+                outGraph.MainVariable.WasUsed = true;
+                outGraph.MainVariable.WasNewValueUsed = false;
+                outGraph.MainVariable.WasAssignedNewValue = LineNumber;
                 if (outGraph.MainVariable.Type != "graph")
                     throw new WrongOperandTypeException(LineNumber, "Floyd", 1, "graph");
             }
@@ -582,6 +592,8 @@ namespace C__DE.Models
             try
             {
                 IsSemanticCorrect &= inGraph.SemanticAnalysis();
+                inGraph.MainVariable.WasUsed = true;
+                inGraph.MainVariable.WasNewValueUsed = true;
                 if (inGraph.MainVariable.Type != "graph" || (inGraph.TypeOfNode != NodeType.Variable))
                     throw new WrongOperandTypeException(LineNumber, "Floyd", 2, "graph");
                 if (inGraph.IsSemanticCorrect && outGraph.IsSemanticCorrect) //ещё надо сравнить размерности

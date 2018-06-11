@@ -269,7 +269,12 @@ namespace C__DE.Models
             int num_if = ++Counters.ifs;
             Condition.GenerateIntermediateCode();
             //то, что получилось, сравниваем с нулём
-            IntermediateCodeList.push(new CmpNode(Condition.MainVariable, new ConstantNode("int", "0", 0).MainVariable));
+            if (Condition.MainVariable.Type == "int")
+                IntermediateCodeList.push(new CmpNode(Condition.MainVariable, new ConstantNode("int", "0", 0).MainVariable));
+            else if (Condition.MainVariable.Type == "bool")
+                IntermediateCodeList.push(new CmpNode(Condition.MainVariable, new ConstantNode("bool", "false", 0).MainVariable));
+            else Console.WriteLine("Что-то не так с типами");
+
             if (ElseBranch == null)
                 //если else-ветки нет, формируем метку на выход, если условие не выполнено
                 //если равно нулю, то условие ложно и уходим
@@ -309,7 +314,11 @@ namespace C__DE.Models
             {
                 ContinueCondition.GenerateIntermediateCode();
                 //то, что получилось, сравниваем с нулём
-                IntermediateCodeList.push(new CmpNode(ContinueCondition.MainVariable, new ConstantNode("int", "0", 0).MainVariable));
+                if (ContinueCondition.MainVariable.Type == "int")
+                    IntermediateCodeList.push(new CmpNode(ContinueCondition.MainVariable, new ConstantNode("int", "0", 0).MainVariable));
+                else if (ContinueCondition.MainVariable.Type == "bool")
+                    IntermediateCodeList.push(new CmpNode(ContinueCondition.MainVariable, new ConstantNode("bool", "false", 0).MainVariable));
+                else Console.WriteLine("Что-то с типами в цикле");
                 //если ложь, то на выход
                 IntermediateCodeList.push(new GoToLabel("exit_cycle_" + num_cycle.ToString(), "je"));
             }
@@ -325,7 +334,11 @@ namespace C__DE.Models
             {
                 ContinueCondition.GenerateIntermediateCode();
                 //то, что получилось, сравниваем с нулём
-                IntermediateCodeList.push(new CmpNode(ContinueCondition.MainVariable, new ConstantNode("int", "0", 0).MainVariable));
+                if (ContinueCondition.MainVariable.Type == "int")
+                    IntermediateCodeList.push(new CmpNode(ContinueCondition.MainVariable, new ConstantNode("int", "0", 0).MainVariable));
+                else if (ContinueCondition.MainVariable.Type == "bool")
+                    IntermediateCodeList.push(new CmpNode(ContinueCondition.MainVariable, new ConstantNode("bool", "false", 0).MainVariable));
+                else Console.WriteLine("Что-то с типами в цикле");
                 //если ложь, то на выход
                 IntermediateCodeList.push(new GoToLabel("exit_cycle_" + num_cycle.ToString(), "je"));
             }

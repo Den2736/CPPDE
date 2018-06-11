@@ -810,8 +810,9 @@ namespace CPPDE
                     return;
                 }
                 //если ветки else нет, то создаём с одной веткой
-                NodesStack.Peek().AddOperator(new ConditionalOperatorNode(ConditionExpression, numLine, IfBranch));
                 NodesStack.Pop();//собрали в кучу
+                NodesStack.Peek().AddOperator(new ConditionalOperatorNode(ConditionExpression, numLine, IfBranch));
+                
             }
 
             //разбор цикла с предусловием
