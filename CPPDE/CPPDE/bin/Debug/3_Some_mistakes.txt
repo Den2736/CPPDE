@@ -6,3 +6,7 @@ a=2*a-b;
 b=b-1
 }
 print(a,b);
+CreateGraph(g1, 7+6);
+CreateGraph(g2, 8);
+Floyd(g2, g1));
+g2=13;

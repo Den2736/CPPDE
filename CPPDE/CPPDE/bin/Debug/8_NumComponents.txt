@@ -1,0 +1,8 @@
+CreateGraph(a,4);
+int n;
+NumComponents(a,n);
+print(n);
+SetEdge(a,0,1,n);
+SetEdge(a,2,3,n);
+NumComponents(a,n);
+print(n);

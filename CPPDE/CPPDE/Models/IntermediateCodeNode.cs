@@ -313,4 +313,30 @@ namespace C__DE.Models
         }
     }
 
+    //Запуск поиска компонент
+    public partial class NumComponentsCall: IntermediateCodeNode
+    {
+        public Variable graph;
+        public Variable outVar;
+        public Variable array;
+        public NumComponentsCall(Variable gr, Variable arr, Variable v)
+        {
+            graph = gr;
+            array = arr;
+            outVar = v;
+        }
+    }
+
+    //подсчёт числа рёбер
+    public partial class CountEdgesInterNode: IntermediateCodeNode
+    {
+        public Variable graph;
+        public Variable outVar;
+        public CountEdgesInterNode(Variable gr, Variable v)
+        {
+            graph = gr;
+            outVar = v;
+        }
+    }
+
 }
