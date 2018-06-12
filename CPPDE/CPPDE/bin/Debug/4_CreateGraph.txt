@@ -1,7 +1,10 @@
-CreateGraph(a,4);
+const int dim=4;
+CreateGraph(a,dim);
 int e;
-for (int i=0; i<4; i++)
-	for (int j=0; j<4; j++)
+for (int i=0; i<dim; i++)
+	for (int j=0; j<dim; j++)
 {GetEdge(a,i,j,e);
 print(e);
 }
+
+scan(e);

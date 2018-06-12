@@ -5,3 +5,17 @@ if (a>b)
 print(a-b);
 int c=(a+b)*(b-a);
 print(c);
+int g = 10;
+
+int x;
+if(c<g){
+g %= c;
+x=g;
+}
+else{
+c%=g;
+x =c;
+}
+print(x);
+
+scan(a);
