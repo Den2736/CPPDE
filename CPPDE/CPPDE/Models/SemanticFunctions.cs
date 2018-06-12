@@ -938,7 +938,11 @@ namespace C__DE.Models
             try
             {
                 if(RightPart!=null)
+                {
                     IsSemanticCorrect &= RightPart.SemanticAnalysis();
+                    RightPart.MainVariable.WasNewValueUsed = true;
+                    RightPart.MainVariable.WasUsed=true;
+                }
             }
             catch (SemanticException e)
             {
