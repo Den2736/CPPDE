@@ -560,7 +560,7 @@ namespace C__DE.Models
                                 {
                                     if (FirstOperand.MainVariable.Type != "int" || SecondOperand.MainVariable.Type != "int")
                                         throw new IncompatibleTypesException(LineNumber, FirstOperand.MainVariable.Type, SecondOperand.MainVariable.Type);
-                                    MainVariable.Type = "int";
+                                    MainVariable.Type = "bool";
                                     break;
                                 }
                             case NodeType.BitOperator:
@@ -934,15 +934,13 @@ namespace C__DE.Models
         {
             IsSemanticCorrect = true;
             MainVariable = new Variable();
+
             try
             {
-                IsSemanticCorrect &= AssignedVariable.SemanticAnalysis();
-                AssignedVariable.MainVariable.WasNewValueUsed = false;
-                AssignedVariable.MainVariable.WasAssignedNewValue = LineNumber;
-                AssignedVariable.MainVariable.WasUsed = true;
-                MainVariable = AssignedVariable.MainVariable;
+                if(RightPart!=null)
+                    IsSemanticCorrect &= RightPart.SemanticAnalysis();
             }
-            catch(SemanticException e)
+            catch (SemanticException e)
             {
                 Console.WriteLine(e.Message);
                 IsSemanticCorrect = false;
@@ -950,8 +948,13 @@ namespace C__DE.Models
 
             try
             {
-                if(RightPart!=null)
-                    IsSemanticCorrect &= RightPart.SemanticAnalysis();
+                IsSemanticCorrect &= AssignedVariable.SemanticAnalysis();
+                MainVariable = AssignedVariable.MainVariable;
+                AssignedVariable.MainVariable.WasNewValueUsed = false;
+                AssignedVariable.MainVariable.WasAssignedNewValue = LineNumber;
+                AssignedVariable.MainVariable.WasUsed = true;
+                AssignedVariable.MainVariable.WasIdentified = true;
+
             }
             catch (SemanticException e)
             {
@@ -1044,6 +1047,7 @@ namespace C__DE.Models
                 ReadVariable.MainVariable.WasNewValueUsed = false;
                 ReadVariable.MainVariable.WasUsed = true;
                 ReadVariable.MainVariable.WasAssignedNewValue = LineNumber;
+                MainVariable = ReadVariable.MainVariable;
             }
             catch (SemanticException e)
             {
@@ -1063,6 +1067,7 @@ namespace C__DE.Models
                 IsSemanticCorrect = WriteVariable.SemanticAnalysis();
                 WriteVariable.MainVariable.WasUsed = true;
                 WriteVariable.MainVariable.WasNewValueUsed = true;
+                MainVariable = WriteVariable.MainVariable;
                 if (!WriteVariable.MainVariable.WasIdentified)
                     throw new UnidentifiedVariableException(WriteVariable.LineNumber, WriteVariable.MainVariable.Name);
             }

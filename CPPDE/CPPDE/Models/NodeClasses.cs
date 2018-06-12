@@ -74,6 +74,12 @@ namespace C__DE.Models
             Value = ConstValue;
             MainVariable.Type = Type;
             MainVariable.WasIdentified = true;
+            //Тут сразу же всё поместим
+            MainVariable.AlternativeName = "const_" + (++Counters.consts);
+            MainVariable.IsConst = true;
+            MainVariable.Value = Value;
+            //константы все отдельно будут (пофиг на оптимизацию)
+            IntermediateCodeList.addVar(MainVariable);
             //Это никуда в таблицу переменных не заносится, просто само себе
         }
         public override void SetParentBlock(BlockNode Parent)

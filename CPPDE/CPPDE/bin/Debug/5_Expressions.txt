@@ -1,0 +1,7 @@
+int a,b;
+scan(a,b);
+print(a+b);
+if (a>b)
+print(a-b);
+int c=(a+b)*(b-a)%10;
+print(c);

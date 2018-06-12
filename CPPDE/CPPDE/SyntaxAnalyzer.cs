@@ -14,7 +14,8 @@ namespace CPPDE
 {
     partial class Program
     {
-
+        //если будет синтаксическая ошибка, будет false
+        public static bool IsSyntaxCorrect = true;
 
         //Одна лексема
         public class Lexeme
@@ -809,8 +810,9 @@ namespace CPPDE
                     return;
                 }
                 //если ветки else нет, то создаём с одной веткой
-                NodesStack.Peek().AddOperator(new ConditionalOperatorNode(ConditionExpression, numLine, IfBranch));
                 NodesStack.Pop();//собрали в кучу
+                NodesStack.Peek().AddOperator(new ConditionalOperatorNode(ConditionExpression, numLine, IfBranch));
+                
             }
 
             //разбор цикла с предусловием
@@ -1322,7 +1324,7 @@ namespace CPPDE
             }
 
             //Дальше пойдут графы
-            public static Dictionary<string, int> OperationsWithGraphs; //операции с графами оформлены в виде функций, ключ- функция, значение - количество параметров
+            public static Dictionary<string, int> OperationsWithGraphs=new Dictionary<string, int>(); //операции с графами оформлены в виде функций, ключ- функция, значение - количество параметров
 
             //установка количества параметроф функций с графами (будет обновляться)
             public static void GetGraphFunctions()
@@ -1331,6 +1333,7 @@ namespace CPPDE
                 OperationsWithGraphs.Add("GetEdge", 4); //граф, вершина 1, вершина 2, переменная с результатом
                 OperationsWithGraphs.Add("SetEdge", 4); //то же самое, только последнее может быть любым выражением
                 OperationsWithGraphs.Add("CopyGraph", 2); //сначала куда, потом откуда. Графы должны быть созданы и одинаковой размерности
+                OperationsWithGraphs.Add("Floyd", 2);
             }
 
             //парсинг операций с графами
@@ -1338,6 +1341,8 @@ namespace CPPDE
             {
                 Lexeme CurrentLexeme = GetLexeme();
                 Lexeme Function = CurrentLexeme;
+                LexemesIterator++;
+                
                 try
                 {
                     GetConcreteLexeme("(");
@@ -1347,6 +1352,7 @@ namespace CPPDE
                 {
                     Console.WriteLine(e.Message);
                 }
+                CurrentLexeme = GetLexeme();
                 if (ReservedWords.Contains(CurrentLexeme.Value) || !char.IsLetter(CurrentLexeme.Value[0]) || Types.Contains(CurrentLexeme.Value))
                     throw new UnexpectedTokenException(CurrentLexeme.Line, CurrentLexeme.Value);
                 //первый параметр всегда имя графа
@@ -1404,7 +1410,27 @@ namespace CPPDE
                 {
                     case ("CreateGraph"):
                         {
-                            NodesStack.Peek().AddOperator(new CreatingGraphNode(Graph.MainVariable.Name, Parameters[0], Function.Line));
+                            NodesStack.Peek().AddOperator(new CreatingGraphNode(Graph, Parameters[0], Function.Line));
+                            break;
+                        }
+                    case ("SetEdge"):
+                        {
+                            NodesStack.Peek().AddOperator(new SetEdgeNode(Graph, Parameters[0], Parameters[1], Function.Line, Parameters[2]));
+                            break;
+                        }
+                    case ("GetEdge"):
+                        {
+                            NodesStack.Peek().AddOperator(new GetEdgeNode(Graph, Parameters[0], Parameters[1], Function.Line, Parameters[2]));
+                            break;
+                        }
+                    case ("CopyGraph"):
+                        {
+                            NodesStack.Peek().AddOperator(new CopyGraph(Graph, Parameters[0], Function.Line));
+                            break;
+                        }
+                    case ("Floyd"):
+                        {
+                            NodesStack.Peek().AddOperator(new FloydNode(Graph, Parameters[0], Function.Line));
                             break;
                         }
                     default:

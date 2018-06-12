@@ -44,7 +44,7 @@ namespace C__DE.Models
     {
         public override void GenerateIntermediateCode()
         {
-            //с констанотой по идее ничего особо делать не надо
+            
         }
     }
 
@@ -52,7 +52,7 @@ namespace C__DE.Models
     {
         public override void GenerateIntermediateCode()
         {
-            // с переменной тоже, вся движуха в других операторах будет
+            //переменная где-то объявлена уже, так что ту ничего
         }
     }
 
@@ -60,8 +60,9 @@ namespace C__DE.Models
     {
         public override void GenerateIntermediateCode()
         {
-            MainVariable.AlternativeName = (++Counters.temps).ToString(); //присваиваем временной переменной имя 
+            MainVariable.AlternativeName = "temp_"+(++Counters.temps).ToString(); //присваиваем временной переменной имя 
             IntermediateCodeList.addVar(MainVariable); //временную переменную - в список переменных
+            FirstOperand.GenerateIntermediateCode();
             //вот тут самое веселье
             if (IsUnary)
             {
@@ -82,6 +83,7 @@ namespace C__DE.Models
             }
             else
             {
+                SecondOperand.GenerateIntermediateCode();
                 switch (Value)
                 {
                     case ("+"):
@@ -150,7 +152,7 @@ namespace C__DE.Models
                             //присваиваем false
                             IntermediateCodeList.push(new AssignmentInterNode(new ConstantNode("bool", "false", 0).MainVariable, MainVariable));
                             //и на выход
-                            IntermediateCodeList.push(new PutLabel((Counters.comparsions).ToString()));
+                            IntermediateCodeList.push(new PutLabel("exit_comp_label_"+(Counters.comparsions).ToString()));
                             break;
                         }
                     //с другими операторами сравнения аналогично, только условие другое
@@ -169,7 +171,7 @@ namespace C__DE.Models
                             //присваиваем false
                             IntermediateCodeList.push(new AssignmentInterNode(new ConstantNode("bool", "false", 0).MainVariable, MainVariable));
                             //и на выход
-                            IntermediateCodeList.push(new PutLabel((Counters.comparsions).ToString()));
+                            IntermediateCodeList.push(new PutLabel("exit_comp_label_" + (Counters.comparsions).ToString()));
                             break;
                         }
                     case (">="):
@@ -187,7 +189,7 @@ namespace C__DE.Models
                             //присваиваем false
                             IntermediateCodeList.push(new AssignmentInterNode(new ConstantNode("bool", "false", 0).MainVariable, MainVariable));
                             //и на выход
-                            IntermediateCodeList.push(new PutLabel((Counters.comparsions).ToString()));
+                            IntermediateCodeList.push(new PutLabel("exit_comp_label_" + (Counters.comparsions).ToString()));
                             break;
                         }
                     case ("<="):
@@ -205,7 +207,7 @@ namespace C__DE.Models
                             //присваиваем false
                             IntermediateCodeList.push(new AssignmentInterNode(new ConstantNode("bool", "false", 0).MainVariable, MainVariable));
                             //и на выход
-                            IntermediateCodeList.push(new PutLabel((Counters.comparsions).ToString()));
+                            IntermediateCodeList.push(new PutLabel("exit_comp_label_" + (Counters.comparsions).ToString()));
                             break;
                         }
                     case ("<"):
@@ -223,7 +225,7 @@ namespace C__DE.Models
                             //присваиваем false
                             IntermediateCodeList.push(new AssignmentInterNode(new ConstantNode("bool", "false", 0).MainVariable, MainVariable));
                             //и на выход
-                            IntermediateCodeList.push(new PutLabel((Counters.comparsions).ToString()));
+                            IntermediateCodeList.push(new PutLabel("exit_comp_label_"+(Counters.comparsions).ToString()));
                             break;
                         }
                     case (">"):
@@ -241,7 +243,7 @@ namespace C__DE.Models
                             //присваиваем false
                             IntermediateCodeList.push(new AssignmentInterNode(new ConstantNode("bool", "false", 0).MainVariable, MainVariable));
                             //и на выход
-                            IntermediateCodeList.push(new PutLabel((Counters.comparsions).ToString()));
+                            IntermediateCodeList.push(new PutLabel("exit_comp_label_"+(Counters.comparsions).ToString()));
                             break;
                         }
                 }
@@ -254,6 +256,7 @@ namespace C__DE.Models
         public override void GenerateIntermediateCode()
         {
             //добавили переменную
+            MainVariable.IsConst = false;//не константа
             IntermediateCodeList.addVar(MainVariable);
         }
     }
@@ -266,7 +269,12 @@ namespace C__DE.Models
             int num_if = ++Counters.ifs;
             Condition.GenerateIntermediateCode();
             //то, что получилось, сравниваем с нулём
-            IntermediateCodeList.push(new CmpNode(Condition.MainVariable, new ConstantNode("int", "0", 0).MainVariable));
+            if (Condition.MainVariable.Type == "int")
+                IntermediateCodeList.push(new CmpNode(Condition.MainVariable, new ConstantNode("int", "0", 0).MainVariable));
+            else if (Condition.MainVariable.Type == "bool")
+                IntermediateCodeList.push(new CmpNode(Condition.MainVariable, new ConstantNode("bool", "false", 0).MainVariable));
+            else Console.WriteLine("Что-то не так с типами");
+
             if (ElseBranch == null)
                 //если else-ветки нет, формируем метку на выход, если условие не выполнено
                 //если равно нулю, то условие ложно и уходим
@@ -306,7 +314,11 @@ namespace C__DE.Models
             {
                 ContinueCondition.GenerateIntermediateCode();
                 //то, что получилось, сравниваем с нулём
-                IntermediateCodeList.push(new CmpNode(ContinueCondition.MainVariable, new ConstantNode("int", "0", 0).MainVariable));
+                if (ContinueCondition.MainVariable.Type == "int")
+                    IntermediateCodeList.push(new CmpNode(ContinueCondition.MainVariable, new ConstantNode("int", "0", 0).MainVariable));
+                else if (ContinueCondition.MainVariable.Type == "bool")
+                    IntermediateCodeList.push(new CmpNode(ContinueCondition.MainVariable, new ConstantNode("bool", "false", 0).MainVariable));
+                else Console.WriteLine("Что-то с типами в цикле");
                 //если ложь, то на выход
                 IntermediateCodeList.push(new GoToLabel("exit_cycle_" + num_cycle.ToString(), "je"));
             }
@@ -322,7 +334,11 @@ namespace C__DE.Models
             {
                 ContinueCondition.GenerateIntermediateCode();
                 //то, что получилось, сравниваем с нулём
-                IntermediateCodeList.push(new CmpNode(ContinueCondition.MainVariable, new ConstantNode("int", "0", 0).MainVariable));
+                if (ContinueCondition.MainVariable.Type == "int")
+                    IntermediateCodeList.push(new CmpNode(ContinueCondition.MainVariable, new ConstantNode("int", "0", 0).MainVariable));
+                else if (ContinueCondition.MainVariable.Type == "bool")
+                    IntermediateCodeList.push(new CmpNode(ContinueCondition.MainVariable, new ConstantNode("bool", "false", 0).MainVariable));
+                else Console.WriteLine("Что-то с типами в цикле");
                 //если ложь, то на выход
                 IntermediateCodeList.push(new GoToLabel("exit_cycle_" + num_cycle.ToString(), "je"));
             }
@@ -347,8 +363,15 @@ namespace C__DE.Models
     {
         public override void GenerateIntermediateCode()
         {
+            if (RightPart != null)
+                RightPart.GenerateIntermediateCode();
             switch (AssignmentOperation)
             {
+                case ("="):
+                    {
+                        IntermediateCodeList.push(new AssignmentInterNode(RightPart.MainVariable, MainVariable));
+                        break;
+                    }
                 case ("+="):
                     {
                         IntermediateCodeList.push(new AddInterNode(AssignedVariable.MainVariable, RightPart.MainVariable, AssignedVariable.MainVariable));
@@ -410,6 +433,8 @@ namespace C__DE.Models
     {
         public override void GenerateIntermediateCode()
         {
+            //тут может быть выражение
+            WriteVariable.GenerateIntermediateCode();
             IntermediateCodeList.push(new WriteVarInterNode(MainVariable));
         }
     }

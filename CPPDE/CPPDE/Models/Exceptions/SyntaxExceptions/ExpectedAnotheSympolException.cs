@@ -1,4 +1,5 @@
-﻿using System;
+﻿using CPPDE;
+using System;
 using System.Collections.Generic;
 using System.Linq;
 using System.Text;
@@ -18,6 +19,7 @@ namespace C__DE.Models.Exceptions.SyntaxExceptions
             Token = token;
             LineNumber = lineNumber;
             Symbol = symbol;
+            Program.IsSyntaxCorrect = false;
         }
     }
 }

@@ -8,16 +8,15 @@ namespace C__DE.Models
 {
     /*узлы промежуточного кода*/
 
-        /// <summary>
-        /// Из типо только bool и int
-        /// 
-        /// Variable - не обязательно переменная, может быть и константа, тогда можно обратиться к свойству Value
-        /// </summary>
+    /// <summary>
+    /// Из типо только bool и int
+    /// 
+    /// Variable - не обязательно переменная, может быть и константа, тогда можно обратиться к свойству Value
+    /// </summary>
 
-    public abstract class IntermediateCodeNode
+    public abstract partial class IntermediateCodeNode
     {
-        //реализовать для каждого типа узлов, 
-        //public abstract void GenerateAssembleCode();
+
     }
 
     //узел бинарного оператора
@@ -31,39 +30,40 @@ namespace C__DE.Models
         {
             FirstOperand = first;
             SecondOperand = second;
+            result = res;
         }
     }
 
     /// <summary>
     /// Арифметические действия (Оба операнда и результат типа int), сюда же относится 
     /// </summary>
-    
+
     //сложение
-    public class AddInterNode: BinaryOperatorIntermediateNode
+    public partial class AddInterNode : BinaryOperatorIntermediateNode
     {
         public AddInterNode(Variable first, Variable second, Variable res) : base(first, second, res) { }
     }
 
     //вычитание
-    public class SubInterNode: BinaryOperatorIntermediateNode
+    public partial class SubInterNode : BinaryOperatorIntermediateNode
     {
         public SubInterNode(Variable first, Variable second, Variable res) : base(first, second, res) { }
     }
 
     //умножение
-    public class MulInterNode: BinaryOperatorIntermediateNode
+    public partial class MulInterNode : BinaryOperatorIntermediateNode
     {
         public MulInterNode(Variable first, Variable second, Variable res) : base(first, second, res) { }
     }
 
     //целая часть от деления
-    public class DivInterNode : BinaryOperatorIntermediateNode
+    public partial class DivInterNode : BinaryOperatorIntermediateNode
     {
         public DivInterNode(Variable first, Variable second, Variable res) : base(first, second, res) { }
     }
 
     //остаток от деления
-    public class ModInterNode : BinaryOperatorIntermediateNode
+    public partial class ModInterNode : BinaryOperatorIntermediateNode
     {
         public ModInterNode(Variable first, Variable second, Variable res) : base(first, second, res) { }
     }
@@ -72,12 +72,12 @@ namespace C__DE.Models
     /// Логические бинарные операторы
     /// </summary>
 
-    public class AndInterNode : BinaryOperatorIntermediateNode
+    public partial class AndInterNode : BinaryOperatorIntermediateNode
     {
         public AndInterNode(Variable first, Variable second, Variable res) : base(first, second, res) { }
     }
 
-    public class OrInterNode : BinaryOperatorIntermediateNode
+    public partial class OrInterNode : BinaryOperatorIntermediateNode
     {
         public OrInterNode(Variable first, Variable second, Variable res) : base(first, second, res) { }
     }
@@ -85,18 +85,18 @@ namespace C__DE.Models
     /// <summary>
     /// Побитовые бинарные операции
     /// </summary>
-    
-    public class BitAndInterNode: BinaryOperatorIntermediateNode
+
+    public partial class BitAndInterNode : BinaryOperatorIntermediateNode
     {
         public BitAndInterNode(Variable first, Variable second, Variable res) : base(first, second, res) { }
     }
 
-    public class BitOrInterNode : BinaryOperatorIntermediateNode
+    public partial class BitOrInterNode : BinaryOperatorIntermediateNode
     {
         public BitOrInterNode(Variable first, Variable second, Variable res) : base(first, second, res) { }
     }
 
-    public class BitXorInterNode: BinaryOperatorIntermediateNode
+    public partial class BitXorInterNode : BinaryOperatorIntermediateNode
     {
         public BitXorInterNode(Variable first, Variable second, Variable res) : base(first, second, res) { }
     }
@@ -104,7 +104,7 @@ namespace C__DE.Models
 
 
     //узел унарного оператора
-    public class UnaryOperatorIntermediateNode : IntermediateCodeNode
+    public abstract class UnaryOperatorIntermediateNode : IntermediateCodeNode
     {
         //ссылки на переменные (в том числе временные)
         public Variable FirstOperand;
@@ -117,37 +117,37 @@ namespace C__DE.Models
     }
 
     //присваивание - присвоить переменной res значение переменной first
-    public class AssignmentInterNode: UnaryOperatorIntermediateNode
+    public partial class AssignmentInterNode : UnaryOperatorIntermediateNode
     {
         public AssignmentInterNode(Variable first, Variable res) : base(first, res) { }
     }
 
     //унарный минус
-    public class UnaryMinusInterNode: UnaryOperatorIntermediateNode
+    public partial class UnaryMinusInterNode : UnaryOperatorIntermediateNode
     {
         public UnaryMinusInterNode(Variable first, Variable res) : base(first, res) { }
     }
 
     //отрицание
-    public class NegativeInterNode: UnaryOperatorIntermediateNode
+    public partial class NegativeInterNode : UnaryOperatorIntermediateNode
     {
         public NegativeInterNode(Variable first, Variable res) : base(first, res) { }
     }
 
     //инкремент++
-    public class IncrementInterNode: UnaryOperatorIntermediateNode
+    public partial class IncrementInterNode : UnaryOperatorIntermediateNode
     {
-        public IncrementInterNode( Variable res) : base(res, res) { }
+        public IncrementInterNode(Variable res) : base(res, res) { }
     }
 
     //декремент--
-    public class DecrementInterNode : UnaryOperatorIntermediateNode
+    public partial class DecrementInterNode : UnaryOperatorIntermediateNode
     {
         public DecrementInterNode(Variable res) : base(res, res) { }
     }
 
     //узел сравнения двух операндов
-    public class CmpNode: IntermediateCodeNode
+    public partial class CmpNode : IntermediateCodeNode
     {
         public Variable FirstOperand;
         public Variable SecondOperand;
@@ -159,7 +159,7 @@ namespace C__DE.Models
     }
 
     //узел метки (то есть в это место будет осуществляться переход)
-    public class PutLabel: IntermediateCodeNode
+    public partial class PutLabel : IntermediateCodeNode
     {
         public string label;
         public PutLabel(string lab)
@@ -169,7 +169,7 @@ namespace C__DE.Models
     }
 
     //узел перехода по метке (отсюда будет переход)
-    public class GoToLabel: IntermediateCodeNode
+    public partial class GoToLabel : IntermediateCodeNode
     {
         public string label;
         public string condition;// jmp, jre и так далее
@@ -179,19 +179,20 @@ namespace C__DE.Models
             condition = cond;
         }
     }
-
+    /* Это не надо
     //объявление переменной - хз как
-    public class DeclarVar: IntermediateCodeNode
+    public class DeclarVar : IntermediateCodeNode
     {
         public Variable variable;
-        public DeclarVar (Variable v)
+        public DeclarVar(Variable v)
         {
             variable = v;
         }
     }
+    */
 
     //чтение переменной
-    public class ReadVarInterNode: IntermediateCodeNode
+    public partial class ReadVarInterNode : IntermediateCodeNode
     {
         public Variable variable;
         public ReadVarInterNode(Variable v)
@@ -201,7 +202,7 @@ namespace C__DE.Models
     }
 
     //вывод на экран значения переменной
-    public class WriteVarInterNode : IntermediateCodeNode
+    public partial class WriteVarInterNode : IntermediateCodeNode
     {
         public Variable variable;
         public WriteVarInterNode(Variable v)
@@ -221,6 +222,7 @@ namespace C__DE.Models
 
     //ребро графа (она же ячейка в матрице, в виде которой хранится граф)
     //ТУТ ГЕНЕРАЦИЯ НЕ НУЖНА, просто вспомогательная структура данных
+
     public class GraphCell
     {
         //строка
@@ -229,13 +231,86 @@ namespace C__DE.Models
         public Variable j;
         //граф (да, это тоже переменная на этапе анализа)
         public Variable graph;
+
+        public GraphCell(Variable gr, Variable f, Variable sec)
+        {
+            graph = gr;
+            i = f;
+            j = sec;
+        }
     }
 
+    //ячейка массива, генерация не нужна
     public class ArrayCell
     {
         //индекс
         public Variable i;
         //массив
         public Variable array;
+
+        public ArrayCell(Variable arr, Variable ind)
+        {
+            i = ind;
+            array = arr;
+        }
     }
+
+    public partial class CreateGraphInterNode: IntermediateCodeNode
+    {
+        //по сути тут занулить диагональные элементы (все остальные равны минус 1)
+        public Variable graph;
+        public CreateGraphInterNode(Variable gr)
+        {
+            graph = gr;
+        }
+    }
+
+    //записать в ячейку графа информацию из некоторой переменной
+    public partial class SetGraphCell : IntermediateCodeNode
+    {
+        public Variable InputVar;
+        public GraphCell Edge;
+        public SetGraphCell(Variable Input, GraphCell Ed)
+        {
+            InputVar = Input;
+            Edge = Ed;
+        }
+
+    }
+
+    //Аналогично, только информация записывается из ячейки в переменную
+    public partial class GetGraphCell : IntermediateCodeNode
+    {
+        public Variable OutputVar;
+        public GraphCell Edge;
+        public GetGraphCell(Variable Output, GraphCell Ed)
+        {
+            OutputVar = Output;
+            Edge = Ed;
+        }
+
+    }
+
+    //копирование графов (можно постараться разбить на более мелкие узлы)
+    public partial class CopyGraphsInterNode: IntermediateCodeNode
+    {
+        public Variable outGraph;
+        public Variable inGraph;
+        public CopyGraphsInterNode(Variable Out, Variable In)
+        {
+            outGraph = Out;
+            inGraph = In;
+        }
+    }
+
+    //Запуск алгоритма Флойда
+    public partial class FloydCall: IntermediateCodeNode
+    {
+        public Variable graph;
+        public FloydCall(Variable v)
+        {
+            graph = v;
+        }
+    }
+
 }

@@ -1,0 +1,13 @@
+CreateGraph(a,4);
+CreateGraph(b,2+2);
+SetEdge(a,0,1,1);
+SetEdge(a,0,2,4);
+SetEdge(a,1,2,1);
+SetEdge(a,3,2,1);
+Floyd(b,a);
+int e;
+for (int i=0; i<4; i++)
+	for (int j=0; j<4; j++)
+{GetEdge(b,i,j,e);
+print(e);
+}

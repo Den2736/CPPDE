@@ -39,6 +39,14 @@ namespace CPPDE
                 Console.WriteLine("Синтаксический анализ окончен");
                 SemanticAnalyzer.Parse();
                 Console.WriteLine("Семантический анализ окончен");
+                if (!(IsSyntaxCorrect && Root.IsSemanticCorrect))
+                    Console.WriteLine("Возникли ошибки сборки. Ассемблерный код не будет сгенерирован");
+                else
+                {
+                    Root.GenerateIntermediateCode();
+                    GeneratingAssembleCode.Generate();
+                    Console.WriteLine("Ассемблерный код сгенерирован");
+                }
             }
             catch (CompilerException e)
             {

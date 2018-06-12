@@ -3,6 +3,7 @@ using System.Collections.Generic;
 using System.Linq;
 using System.Text;
 using System.Threading.Tasks;
+using CPPDE;
 
 namespace C__DE.Models.Exceptions.SyntaxExceptions
 {
@@ -16,6 +17,7 @@ namespace C__DE.Models.Exceptions.SyntaxExceptions
         {
             Token=token;
             LineNumber = lineNumber;
+            Program.IsSyntaxCorrect = false;
         }
     }
 }
