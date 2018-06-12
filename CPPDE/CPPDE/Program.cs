@@ -11,7 +11,7 @@ namespace CPPDE
 {
     public partial class Program
     {
-        public static IEnumerable<string> Types = new string[] { "int", /*"char", "string", "float",*/ "bool"};
+        public static IEnumerable<string> Types = new string[] { "int", /*"char", "string", "float",*/ "bool" };
 
         /// <summary>
         /// Lexemes in format (line number - lexemes)
@@ -27,14 +27,21 @@ namespace CPPDE
 
         static void Main(string[] args)
         {
-            // TODO get sourcePath from args
+            string sourcePath = "";
+            if (args.Any())
+            {
+                sourcePath = args[0];
+            }
+            else
+            {
+                Console.Write($"Paste source file need to compile:{Environment.NewLine}" +
+                    "> ");
+                sourcePath = Console.ReadLine();
+            }
 
             try
             {
-                Console.Write($"Paste path to the source file:{Environment.NewLine}");
-                string sourcePath = Console.ReadLine();
                 LexicalAnalyzer.Parse(sourcePath);
-                //var a = 0;
                 SyntaxAnalyzer.Parse();
                 Console.WriteLine("Синтаксический анализ окончен");
                 SemanticAnalyzer.Parse();
@@ -52,6 +59,9 @@ namespace CPPDE
             {
                 Console.WriteLine(e.Message);
             }
+
+            Console.WriteLine("Press any key to finish...");
+            Console.ReadLine();
         }
     }
 }
