@@ -286,7 +286,7 @@ namespace C__DE.Models
                 GeneratingAssembleCode.outFile.WriteLine("jmp exit_{0}", label);
                 GeneratingAssembleCode.outFile.WriteLine("{0}:", label);
                 GeneratingAssembleCode.outFile.WriteLine("mov eax, 1", variable.AlternativeName);
-                GeneratingAssembleCode.outFile.WriteLine("exit_{0}", label);
+                GeneratingAssembleCode.outFile.WriteLine("exit_{0}:", label);
                 GeneratingAssembleCode.outFile.WriteLine("invoke  crt_printf, ADDR Format_out, eax");
             }
         }
@@ -384,12 +384,37 @@ namespace C__DE.Models
         }
     }
 
+    public partial class NumComponentsCall
+    {
+        public override void GenerateAsmCode()
+        {
+            GeneratingAssembleCode.outFile.WriteLine("invoke num_components, ADDR {0}, {1}, ADDR {2}, ADDR {3}", graph.AlternativeName, graph.Value, outVar.AlternativeName, array.AlternativeName);
+        }
+    }
+
+    public partial class CountEdgesInterNode
+    {
+        public override void GenerateAsmCode()
+        {
+            GeneratingAssembleCode.outFile.WriteLine("invoke num_edges, ADDR {0}, {1}, ADDR {2}", graph.AlternativeName, graph.Value, outVar.AlternativeName);
+        }
+    }
+
     public static class GeneratingAssembleCode
     {
         public static StreamWriter outFile = new StreamWriter("assemble_code.asm");
 
         //показывает, используется ли где-нибудь алгоритм Флойда (если нет, то код для него генерироваться не будет)
         public static bool WasFloydUsed = false;
+
+        //Аналогично - для DFS
+        public static bool WasDFSUsed = false;
+
+        //Подсчёт числа компонент
+        public static bool NumComponentsUsed = false;
+
+        //Нужен ли подсчёт рёбер
+        public static bool WasCountEdgesUsed = false;
 
         //объявление переменной в сегменте данных (временные переменные будут тут же!)
         public static void PutVariable(Variable v)
@@ -419,7 +444,7 @@ namespace C__DE.Models
                 //раз нормально скомпилилось, можно сразу размер указать
                 outFile.WriteLine("dd {0} dup(-1)", (int.Parse(v.Value)* int.Parse(v.Value)));
             else if (v.Type=="array")
-                //массивы вспомогательные, для функций с графами
+                //массивы вспомогательные, булевские, для функций с графами
                 outFile.WriteLine("db {0} dup(0)", int.Parse(v.Value));
         }
 
@@ -556,7 +581,124 @@ namespace C__DE.Models
         //поиск в глубину
         public static void MakeDFSFunction()
         {
+            outFile.WriteLine("DFS proc graph_pointer: DWORD, graph_dim: DWORD, used_pointer: DWORD, curr_vertex: DWORD");
+            //функция рекурсивная, поэтому сохраняем значения регистров
+            outFile.WriteLine("push esi");
+            outFile.WriteLine("push ebx");
+            outFile.WriteLine("push ecx");
+            //помечаем текущую вершину просмотренной
+            outFile.WriteLine("mov esi, used_pointer");
+            outFile.WriteLine("mov eax, curr_vertex");
+            outFile.WriteLine("mov bl, 127");
+            outFile.WriteLine("mov[esi + eax], bl");
+            outFile.WriteLine(" mov ecx, graph_dim");
+            //в ebx будет номер текущей просматриваемой вершины
+            outFile.WriteLine("mov ebx,0");
+            outFile.WriteLine("DFS_cycle:");
+            outFile.WriteLine("mov esi, used_pointer");
+            outFile.WriteLine("mov al, [esi + ebx]");
+            //если вершина просмотрена, то идём на следующую итерацию
+            outFile.WriteLine("cmp al,0");
+            outFile.WriteLine("jne next_dfs");
+            //смотрим, смежна ливершина с данной
+            outFile.WriteLine("mov esi, graph_pointer");
+            outFile.WriteLine("mov eax, curr_vertex");
+            outFile.WriteLine("mul graph_dim");
+            outFile.WriteLine("add eax, ebx");
+            outFile.WriteLine("mov edx,4");
+            outFile.WriteLine("mul edx");
+            //проверяем наличие ребра
+            outFile.WriteLine("mov eax, [esi + eax]");
+            outFile.WriteLine("cmp eax, -1");
+            outFile.WriteLine("je next_dfs");
+            //если смежна и не просмотрена - рекурсивный вызов
+            outFile.WriteLine("push ecx");
+            //после инвоука почему-то портится ecx
+            outFile.WriteLine("invoke DFS, graph_pointer, graph_dim, used_pointer, ebx");
+            outFile.WriteLine("pop ecx");
+            outFile.WriteLine("next_dfs:");
+            outFile.WriteLine("inc ebx");
+            outFile.WriteLine("loop DFS_cycle");
+            //восстанавливаем значения регистров и возвращаем управление
+            outFile.WriteLine("pop ecx");
+            outFile.WriteLine("pop ebx");
+            outFile.WriteLine("pop esi");
+            outFile.WriteLine("ret");
+            outFile.WriteLine("DFS endp");
+        }
 
+        //Число компонент
+        public static void MakeNumComponentsFunction()
+        {
+            outFile.WriteLine("num_components proc graph_pointer: DWORD, graph_dim: DWORD, components: DWORD, used_pointer: DWORD");
+            //обнулить компоненты
+            outFile.WriteLine(" mov esi, components");
+            outFile.WriteLine("mov eax, 0");
+            outFile.WriteLine("mov[esi], eax");
+            //номер текущей вершины
+            outFile.WriteLine("mov ebx, 0");
+            //в esi - указатель на будевский массив
+            outFile.WriteLine("mov esi, used_pointer");
+            //счётсик цикла
+            outFile.WriteLine("mov ecx, graph_dim");
+            outFile.WriteLine("num_components_cycle:");
+            //Посещена ли вершина
+            outFile.WriteLine("mov al, [esi]");
+            outFile.WriteLine("cmp al,0");
+            //Если нет - Вызываем DFS
+            outFile.WriteLine("jne next_component");
+            outFile.WriteLine("push esi");
+            outFile.WriteLine("mov esi, components");
+            outFile.WriteLine("mov eax, [esi]");
+            outFile.WriteLine("inc eax");
+            outFile.WriteLine("mov[esi], eax");
+            outFile.WriteLine("pop esi");
+            outFile.WriteLine("push ecx");
+            outFile.WriteLine("invoke DFS, graph_pointer, graph_dim, used_pointer, ebx");
+            outFile.WriteLine("pop ecx");
+            //Если посещена - идём дальше
+            outFile.WriteLine("next_component:");
+            outFile.WriteLine("inc ebx");
+            outFile.WriteLine("inc esi");
+            outFile.WriteLine("loop num_components_cycle");
+            outFile.WriteLine("ret");
+            outFile.WriteLine("num_components endp");
+        }
+
+        //число рёбер
+        public static void MakeCountEdges()
+        {
+            outFile.WriteLine("num_edges proc graph_pointer: DWORD, graph_dim: DWORD, num_edges_pointer: DWORD");
+            //Зануляем число рёбер
+            outFile.WriteLine("mov esi, num_edges_pointer");
+            outFile.WriteLine("mov dword ptr[esi], 0");
+            outFile.WriteLine("mov eax, graph_dim");
+            outFile.WriteLine("mul eax");
+            outFile.WriteLine("mov ecx, eax");
+            outFile.WriteLine("mov esi, graph_pointer");
+            //Просматривем все ячейки матрицы
+            outFile.WriteLine("count_edges_cycle:");
+            outFile.WriteLine("mov eax, [esi]");
+            //Считаем всё, что не -1
+            outFile.WriteLine("cmp eax, -1");
+            outFile.WriteLine("je next_edge");
+            outFile.WriteLine("push esi");
+            outFile.WriteLine("mov esi, num_edges_pointer");
+            outFile.WriteLine("inc dword ptr[esi]");
+            outFile.WriteLine("pop esi");
+            outFile.WriteLine("next_edge:");
+            outFile.WriteLine("add esi, 4");
+            outFile.WriteLine("loop count_edges_cycle");
+            outFile.WriteLine("mov esi, num_edges_pointer");
+            outFile.WriteLine("mov eax, [esi]");
+            //Удаляем диагональные ячейки (они нули и к рёбрам не относятся)
+            outFile.WriteLine("sub eax, graph_dim");
+            //Делим пополам, т.к матрица симметричная
+            outFile.WriteLine("mov ebx, 2");
+            outFile.WriteLine("div ebx");
+            outFile.WriteLine("mov[esi], eax");
+            outFile.WriteLine("ret");
+            outFile.WriteLine("num_edges endp");
         }
 
         public static void Generate()
@@ -575,6 +717,12 @@ namespace C__DE.Models
             outFile.WriteLine("uselib kernel32, user32, masm32, comctl32");
             if (WasFloydUsed)
                 outFile.WriteLine("Floyd PROTO :DWORD, :DWORD");
+            if (WasDFSUsed)
+                outFile.WriteLine("DFS PROTO :DWORD, :DWORD, :DWORD, :DWORD");
+            if (NumComponentsUsed)
+                outFile.WriteLine("num_components PROTO :DWORD, :DWORD, :DWORD, :DWORD");
+            if (WasCountEdgesUsed)
+                outFile.WriteLine("num_edges PROTO:DWORD, :DWORD, :DWORD");
             //начало сегмента данных
             outFile.WriteLine(".data");
             //буфер для чтения
@@ -595,6 +743,12 @@ namespace C__DE.Models
             //если Флойд используется, то генерим код для процедуры
             if (WasFloydUsed)
                 MakeFloydFunction();
+            if (WasDFSUsed)
+                MakeDFSFunction();
+            if (NumComponentsUsed)
+                MakeNumComponentsFunction();
+            if (WasCountEdgesUsed)
+                MakeCountEdges();
             outFile.WriteLine("start:");
             foreach (var node in IntermediateCodeList.IntermediateList)
                 node.GenerateAsmCode();

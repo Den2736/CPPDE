@@ -852,6 +852,14 @@ namespace CPPDE
                 //а если лишние скобки?
                 while (CurrentLexeme.Value == ")" || OperationPriorities.Keys.Contains(CurrentLexeme.Value))
                 {
+                    try
+                    {
+                        throw new UnexpectedTokenException(CurrentLexeme.Line, CurrentLexeme.Value);
+                    }
+                    catch (SyntaxException e)
+                    {
+                        Console.WriteLine(e.Message);
+                    }
                     if (CurrentLexeme.Value == ")")
                         LexemesIterator++;
                     else
@@ -962,26 +970,37 @@ namespace CPPDE
                 {
                     Console.WriteLine(e.Message);
                 }
-                CurrentLexeme = GetLexeme();
-                //а если лишние скобки?
-                while (CurrentLexeme.Value == ")" || OperationPriorities.Keys.Contains(CurrentLexeme.Value))
+                if (LexemesIterator < LexemsForSyntaxAnalysis.Count)
                 {
-                    if (CurrentLexeme.Value == ")")
-                        LexemesIterator++;
-                    else
+                    CurrentLexeme = GetLexeme();
+                    //а если лишние скобки?
+                    while (CurrentLexeme.Value == ")" || OperationPriorities.Keys.Contains(CurrentLexeme.Value))
                     {
-                        LexemesIterator++;
                         try
                         {
-                            ParseExpression();
+                            throw new UnexpectedTokenException(CurrentLexeme.Line, CurrentLexeme.Value);
                         }
-                        catch (SyntaxException e)//надо ли тут выводить?
+                        catch (SyntaxException e)
                         {
                             Console.WriteLine(e.Message);
                         }
-                    }
-                    CurrentLexeme = GetLexeme();
+                        if (CurrentLexeme.Value == ")")
+                            LexemesIterator++;
+                        else
+                        {
+                            LexemesIterator++;
+                            try
+                            {
+                                ParseExpression();
+                            }
+                            catch (SyntaxException e)//надо ли тут выводить?
+                            {
+                                Console.WriteLine(e.Message);
+                            }
+                        }
+                        CurrentLexeme = GetLexeme();
 
+                    }
                 }
                 NodesStack.Pop();
                 CycleOperator NewCycle = new CycleOperator(false, Exp, numline);
@@ -1069,6 +1088,15 @@ namespace CPPDE
                 //а если лишние скобки?
                 while (CurrentLexeme.Value == ")" || OperationPriorities.Keys.Contains(CurrentLexeme.Value))
                 {
+                    try
+                    {
+                        throw new UnexpectedTokenException(CurrentLexeme.Line, CurrentLexeme.Value);
+                    }
+                    catch (SyntaxException e)
+                    {
+                        Console.WriteLine(e.Message);
+                    }
+
                     if (CurrentLexeme.Value == ")")
                         LexemesIterator++;
                     else
@@ -1334,6 +1362,10 @@ namespace CPPDE
                 OperationsWithGraphs.Add("SetEdge", 4); //то же самое, только последнее может быть любым выражением
                 OperationsWithGraphs.Add("CopyGraph", 2); //сначала куда, потом откуда. Графы должны быть созданы и одинаковой размерности
                 OperationsWithGraphs.Add("Floyd", 2);
+                OperationsWithGraphs.Add("NumComponents", 2);
+                OperationsWithGraphs.Add("NumEdges", 2);
+                OperationsWithGraphs.Add("IsTree", 2);
+                OperationsWithGraphs.Add("IsFull", 2);
             }
 
             //парсинг операций с графами
@@ -1365,7 +1397,7 @@ namespace CPPDE
                 List<AtomNode> Parameters = new List<AtomNode>();
                 AtomNode Exp;
                 while (numParameters>0)
-                {   //тут можно сделать проверку типа "недостаточно параметров"
+                { 
                     try
                     {
                         GetConcreteLexeme(",");
@@ -1431,6 +1463,26 @@ namespace CPPDE
                     case ("Floyd"):
                         {
                             NodesStack.Peek().AddOperator(new FloydNode(Graph, Parameters[0], Function.Line));
+                            break;
+                        }
+                    case ("NumComponents"):
+                        {
+                            NodesStack.Peek().AddOperator(new NumComponentsNode(Graph, Parameters[0], Function.Line));
+                            break;
+                        }
+                    case ("NumEdges"):
+                        {
+                            NodesStack.Peek().AddOperator(new CountEdgesNode(Graph, Parameters[0], Function.Line));
+                            break;
+                        }
+                    case ("IsTree"):
+                        {
+                            NodesStack.Peek().AddOperator(new IsTreeNode(Graph, Parameters[0], Function.Line));
+                            break;
+                        }
+                    case ("IsFull"):
+                        {
+                            NodesStack.Peek().AddOperator(new IsFullNode(Graph, Parameters[0], Function.Line));
                             break;
                         }
                     default:

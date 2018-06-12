@@ -366,9 +366,14 @@ namespace C__DE.Models
 
         public override void GenerateIntermediateCode()
         {
+            //Нельзя добавить петлю
+            IntermediateCodeList.push(new CmpNode(first.MainVariable, second.MainVariable));
+            string label = "comp_" + (++Counters.comparsions).ToString();
+            IntermediateCodeList.push(new GoToLabel(label, "je"));
             //граф будет неориентированный, поэтому добавляем в обе стороны
             IntermediateCodeList.push(new SetGraphCell(Res.MainVariable, new GraphCell(graph.MainVariable, first.MainVariable, second.MainVariable)));
             IntermediateCodeList.push(new SetGraphCell(Res.MainVariable, new GraphCell(graph.MainVariable, second.MainVariable, first.MainVariable)));
+            IntermediateCodeList.push(new PutLabel(label));
         }
     }
 
@@ -596,7 +601,7 @@ namespace C__DE.Models
                 inGraph.MainVariable.WasNewValueUsed = true;
                 if (inGraph.MainVariable.Type != "graph" || (inGraph.TypeOfNode != NodeType.Variable))
                     throw new WrongOperandTypeException(LineNumber, "Floyd", 2, "graph");
-                if (inGraph.IsSemanticCorrect && outGraph.IsSemanticCorrect) //ещё надо сравнить размерности
+                if (IsSemanticCorrect) //ещё надо сравнить размерности
                     if (int.Parse(inGraph.MainVariable.Value) != int.Parse(outGraph.MainVariable.Value)) //если не равны
                         throw new UnequalGraphsDimentionsException(LineNumber, outGraph.MainVariable.Name, inGraph.MainVariable.Name);
 
@@ -614,6 +619,373 @@ namespace C__DE.Models
             IntermediateCodeList.push(new CopyGraphsInterNode(outGraph.MainVariable, inGraph.MainVariable));
             IntermediateCodeList.push(new FloydCall(outGraph.MainVariable));
             GeneratingAssembleCode.WasFloydUsed = true;
+        }
+    }
+
+    public class NumComponentsNode: AtomNode
+    {
+        public VariableNode graph;
+        public AtomNode outVariable;
+        public NumComponentsNode(VariableNode gr, AtomNode outVar, int Line)
+        {
+            graph = gr;
+            outVariable = outVar;
+            LineNumber = Line;
+        }
+
+        public override void SetParentBlock(BlockNode Parent)
+        {
+            parentBlock = Parent;
+            outVariable.SetParentBlock(Parent);
+            graph.SetParentBlock(Parent);
+        }
+
+        public override string CanCreateGraph()
+        {
+            return "";
+        }
+
+        public override bool SemanticAnalysis()
+        {
+            try
+            {
+                IsSemanticCorrect = graph.SemanticAnalysis();
+                graph.MainVariable.WasUsed = true;
+                graph.MainVariable.WasNewValueUsed = true;
+                if (graph.MainVariable.Type != "graph")
+                    throw new WrongOperandTypeException(LineNumber, "NumComponents", 1, "graph");
+
+            }
+            catch (SemanticException e)
+            {
+                Console.WriteLine(e.Message);
+                IsSemanticCorrect = false;
+            }
+
+            try
+            {
+                IsSemanticCorrect &= outVariable.SemanticAnalysis();
+                outVariable.MainVariable.WasUsed = true;
+                outVariable.MainVariable.WasNewValueUsed = false;
+                outVariable.MainVariable.WasIdentified = true;
+                outVariable.MainVariable.WasAssignedNewValue = LineNumber;
+                if (outVariable.TypeOfNode != NodeType.Variable || (outVariable.MainVariable.Type != "int"))
+                    throw new WrongOperandTypeException(LineNumber, "NumComponents", 2, "int variable");
+            }
+            catch (SemanticException e)
+            {
+                Console.WriteLine(e.Message);
+                IsSemanticCorrect = false;
+            }
+            //возвращаемся
+            return IsSemanticCorrect;
+        }
+
+        public override void GenerateIntermediateCode()
+        {
+            Variable arr = new Variable();
+            arr.AlternativeName = "array_" + (++Counters.arrays).ToString();
+            arr.Type = "array";
+            arr.Value = graph.MainVariable.Value;
+            //Создали массив для вычислений
+            IntermediateCodeList.addVar(arr);
+            IntermediateCodeList.push(new NumComponentsCall(graph.MainVariable, arr, outVariable.MainVariable));
+            GeneratingAssembleCode.WasDFSUsed = true;
+            GeneratingAssembleCode.NumComponentsUsed = true;
+        }
+    }
+
+    public class CountEdgesNode: AtomNode
+    {
+        public VariableNode graph;
+        public AtomNode outVariable;
+        public CountEdgesNode(VariableNode gr, AtomNode outVar, int Line)
+        {
+            graph = gr;
+            outVariable = outVar;
+            LineNumber = Line;
+        }
+
+        public override void SetParentBlock(BlockNode Parent)
+        {
+            parentBlock = Parent;
+            outVariable.SetParentBlock(Parent);
+            graph.SetParentBlock(Parent);
+        }
+
+        public override string CanCreateGraph()
+        {
+            return "";
+        }
+
+        public override bool SemanticAnalysis()
+        {
+            try
+            {
+                IsSemanticCorrect = graph.SemanticAnalysis();
+                graph.MainVariable.WasUsed = true;
+                graph.MainVariable.WasNewValueUsed = true;
+                if (graph.MainVariable.Type != "graph")
+                    throw new WrongOperandTypeException(LineNumber, "NumComponents", 1, "graph");
+
+            }
+            catch (SemanticException e)
+            {
+                Console.WriteLine(e.Message);
+                IsSemanticCorrect = false;
+            }
+
+            try
+            {
+                IsSemanticCorrect &= outVariable.SemanticAnalysis();
+                outVariable.MainVariable.WasUsed = true;
+                outVariable.MainVariable.WasNewValueUsed = false;
+                outVariable.MainVariable.WasIdentified = true;
+                outVariable.MainVariable.WasAssignedNewValue = LineNumber;
+                if (outVariable.TypeOfNode != NodeType.Variable || (outVariable.MainVariable.Type != "int"))
+                    throw new WrongOperandTypeException(LineNumber, "NumComponents", 2, "int variable");
+            }
+            catch (SemanticException e)
+            {
+                Console.WriteLine(e.Message);
+                IsSemanticCorrect = false;
+            }
+            //возвращаемся
+            return IsSemanticCorrect;
+        }
+
+        public override void GenerateIntermediateCode()
+        {
+            IntermediateCodeList.push(new CountEdgesInterNode(graph.MainVariable, outVariable.MainVariable));
+            GeneratingAssembleCode.WasCountEdgesUsed = true;
+        }
+    }
+
+    public class IsTreeNode: AtomNode
+    {
+        public VariableNode graph;
+        public AtomNode outVariable;
+        public IsTreeNode(VariableNode gr, AtomNode outVar, int Line)
+        {
+            graph = gr;
+            outVariable = outVar;
+            LineNumber = Line;
+        }
+
+        public override void SetParentBlock(BlockNode Parent)
+        {
+            parentBlock = Parent;
+            outVariable.SetParentBlock(Parent);
+            graph.SetParentBlock(Parent);
+        }
+
+        public override string CanCreateGraph()
+        {
+            return "";
+        }
+
+        public override bool SemanticAnalysis()
+        {
+            try
+            {
+                IsSemanticCorrect = graph.SemanticAnalysis();
+                graph.MainVariable.WasUsed = true;
+                graph.MainVariable.WasNewValueUsed = true;
+                if (graph.MainVariable.Type != "graph")
+                    throw new WrongOperandTypeException(LineNumber, "IsTree", 1, "graph");
+
+            }
+            catch (SemanticException e)
+            {
+                Console.WriteLine(e.Message);
+                IsSemanticCorrect = false;
+            }
+
+            try
+            {
+                IsSemanticCorrect &= outVariable.SemanticAnalysis();
+                outVariable.MainVariable.WasUsed = true;
+                outVariable.MainVariable.WasNewValueUsed = false;
+                outVariable.MainVariable.WasIdentified = true;
+                outVariable.MainVariable.WasAssignedNewValue = LineNumber;
+                if ( (outVariable.TypeOfNode != NodeType.Variable) || (outVariable.MainVariable.Type!="bool"))
+                    throw new WrongOperandTypeException(LineNumber, "IsTree", 2, "bool variable");
+            }
+            catch (SemanticException e)
+            {
+                Console.WriteLine(e.Message);
+                IsSemanticCorrect = false;
+            }
+            //возвращаемся
+            return IsSemanticCorrect;
+        }
+
+        public override void GenerateIntermediateCode()
+        {
+            Variable temp = new Variable();
+            temp.Type = "int";
+            temp.AlternativeName = "temp_" + (++Counters.temps);
+            IntermediateCodeList.addVar(temp);
+
+            Variable tr = new Variable();
+            tr.IsConst = true;
+            tr.AlternativeName = "const_" + (++Counters.consts).ToString();
+            tr.Value = "true";
+            tr.Type = "bool";
+            IntermediateCodeList.addVar(tr);
+
+            Variable fl = new Variable();
+            fl.IsConst = true;
+            fl.AlternativeName = "const_" + (++Counters.consts).ToString();
+            fl.Value = "false";
+            fl.Type = "bool";
+            IntermediateCodeList.addVar(fl);
+
+            Variable Edges = new Variable();
+            Edges.IsConst = true;
+            Edges.AlternativeName = "const_" + (++Counters.consts).ToString();
+            Edges.Value = (int.Parse(graph.MainVariable.Value) - 1).ToString();
+            Edges.Type = "int";
+            IntermediateCodeList.addVar(Edges);
+
+            Variable temp_arr = new Variable();
+            temp_arr.Value = graph.MainVariable.Value;
+            temp_arr.Type = "array";
+            temp_arr.AlternativeName = "array_" + (++Counters.arrays).ToString();
+            IntermediateCodeList.addVar(temp_arr);
+
+            Variable comps = new Variable();
+            comps.IsConst = true;
+            comps.AlternativeName = "const_" + (++Counters.consts).ToString();
+            comps.Value = "1";
+            comps.Type = "int";
+            IntermediateCodeList.addVar(comps);
+
+            //Считаем рёбра
+            IntermediateCodeList.push(new CountEdgesInterNode(graph.MainVariable, temp));
+            //српавниваем
+            IntermediateCodeList.push(new CmpNode(temp, Edges));
+            string label = "not_tree_" + (++Counters.comparsions).ToString();
+            //Если не совпадает - плохо
+            IntermediateCodeList.push(new GoToLabel(label, "jne"));
+            //Если пока совпадает, проверим на связность
+            IntermediateCodeList.push(new NumComponentsCall(graph.MainVariable, temp_arr, temp));
+            
+            IntermediateCodeList.push(new CmpNode(temp, comps));
+            //Если не совпадает - плохо
+            IntermediateCodeList.push(new GoToLabel(label, "jne"));
+            IntermediateCodeList.push(new AssignmentInterNode(tr, outVariable.MainVariable));
+            IntermediateCodeList.push(new GoToLabel(label+"_exit", "jmp"));
+            IntermediateCodeList.push(new PutLabel(label));
+            IntermediateCodeList.push(new AssignmentInterNode(fl, outVariable.MainVariable));
+            IntermediateCodeList.push(new PutLabel(label + "_exit"));
+            GeneratingAssembleCode.WasCountEdgesUsed = true;
+            GeneratingAssembleCode.NumComponentsUsed = true;
+            GeneratingAssembleCode.WasDFSUsed = true;
+        }
+    }
+
+    public class IsFullNode: AtomNode
+    {
+        public VariableNode graph;
+        public AtomNode outVariable;
+        public IsFullNode(VariableNode gr, AtomNode outVar, int Line)
+        {
+            graph = gr;
+            outVariable = outVar;
+            LineNumber = Line;
+        }
+
+        public override void SetParentBlock(BlockNode Parent)
+        {
+            parentBlock = Parent;
+            outVariable.SetParentBlock(Parent);
+            graph.SetParentBlock(Parent);
+        }
+
+        public override string CanCreateGraph()
+        {
+            return "";
+        }
+
+        public override bool SemanticAnalysis()
+        {
+            try
+            {
+                IsSemanticCorrect = graph.SemanticAnalysis();
+                graph.MainVariable.WasUsed = true;
+                graph.MainVariable.WasNewValueUsed = true;
+                if (graph.MainVariable.Type != "graph")
+                    throw new WrongOperandTypeException(LineNumber, "IsFull", 1, "graph");
+
+            }
+            catch (SemanticException e)
+            {
+                Console.WriteLine(e.Message);
+                IsSemanticCorrect = false;
+            }
+
+            try
+            {
+                IsSemanticCorrect &= outVariable.SemanticAnalysis();
+                outVariable.MainVariable.WasUsed = true;
+                outVariable.MainVariable.WasNewValueUsed = false;
+                outVariable.MainVariable.WasIdentified = true;
+                outVariable.MainVariable.WasAssignedNewValue = LineNumber;
+                if ((outVariable.TypeOfNode != NodeType.Variable) || (outVariable.MainVariable.Type != "bool"))
+                    throw new WrongOperandTypeException(LineNumber, "IsFull", 2, "bool variable");
+            }
+            catch (SemanticException e)
+            {
+                Console.WriteLine(e.Message);
+                IsSemanticCorrect = false;
+            }
+            //возвращаемся
+            return IsSemanticCorrect;
+        }
+
+        public override void GenerateIntermediateCode()
+        {
+            Variable temp = new Variable();
+            temp.Type = "int";
+            temp.AlternativeName = "temp_" + (++Counters.temps);
+            IntermediateCodeList.addVar(temp);
+
+            Variable tr = new Variable();
+            tr.IsConst = true;
+            tr.AlternativeName = "const_" + (++Counters.consts).ToString();
+            tr.Value = "true";
+            tr.Type = "bool";
+            IntermediateCodeList.addVar(tr);
+
+            Variable fl = new Variable();
+            fl.IsConst = true;
+            fl.AlternativeName = "const_" + (++Counters.consts).ToString();
+            fl.Value = "false";
+            fl.Type = "bool";
+            IntermediateCodeList.addVar(fl);
+
+            Variable Edges = new Variable();
+            Edges.IsConst = true;
+            Edges.AlternativeName = "const_" + (++Counters.consts).ToString();
+            Edges.Value = ((int.Parse(graph.MainVariable.Value) * (int.Parse(graph.MainVariable.Value) - 1)) / 2).ToString();
+            Edges.Type = "int";
+            IntermediateCodeList.addVar(Edges);
+
+            //Считаем рёбра
+            IntermediateCodeList.push(new CountEdgesInterNode(graph.MainVariable, temp));
+            //српавниваем
+            IntermediateCodeList.push(new CmpNode(temp, Edges));
+            string label = "not_full_" + (++Counters.comparsions).ToString();
+            //Если не совпадает - плохо
+            IntermediateCodeList.push(new GoToLabel(label, "jne"));
+            //Если совпадает, то всё хорошо
+            IntermediateCodeList.push(new AssignmentInterNode(tr, outVariable.MainVariable));
+            IntermediateCodeList.push(new GoToLabel(label + "_exit", "jmp"));
+            IntermediateCodeList.push(new PutLabel(label));
+            IntermediateCodeList.push(new AssignmentInterNode(fl, outVariable.MainVariable));
+            IntermediateCodeList.push(new PutLabel(label + "_exit"));
+            GeneratingAssembleCode.WasCountEdgesUsed = true;
         }
     }
 }

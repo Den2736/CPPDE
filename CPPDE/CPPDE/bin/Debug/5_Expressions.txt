@@ -3,5 +3,5 @@ scan(a,b);
 print(a+b);
 if (a>b)
 print(a-b);
-int c=(a+b)*(b-a)%10;
+int c=(a+b)*(b-a);
 print(c);

@@ -1,0 +1,24 @@
+CreateGraph(a,2);
+SetEdge(a,0,1,1);
+bool c;
+IsTree(a,c);
+print(c);
+IsFull(a,c);
+print(c);
+
+CreateGraph(b,4);
+SetEdge(b,0,1,1);
+SetEdge(b,1,2,1);
+SetEdge(b,0,3,1);
+IsTree(b,c);
+print(c);
+IsFull(b,c);
+print(c);
+
+
+CreateGraph(f,4);
+Floyd(f,b);
+IsTree(f,c);
+print(c);
+IsFull(f,c);
+print(c);

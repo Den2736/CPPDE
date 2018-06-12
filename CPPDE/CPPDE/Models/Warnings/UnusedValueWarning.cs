@@ -8,7 +8,7 @@ namespace C__DE.Models.Warnings
 {
     class UnusedValueWarning:WarningMessage
     {
-        public override string Message => $"Variable {VariableName} was assigned in line {LineNumber} but this walue was never used";
+        public override string Message => $"Variable {VariableName} was assigned in line {LineNumber} but this value was never used";
         public int LineNumber { get; }
         public string VariableName { get; }
 
