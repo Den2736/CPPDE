@@ -1,12 +1,15 @@
 a=0;
 int b,c;
-for (int i=0; i<a*b; i=i+11)
+for (int i=0; i<a*b; i=i+11))
 {
 a=2*a-b;
 b=b-1
 }
 print(a,b);
 CreateGraph(g1, 7+6);
-CreateGraph(g2, 8);
+CreateGraph(g2, 8)
 Floyd(g2, g1));
 g2=13;
+int k;
+IsTree(g2,k);
+CreateGraph(g4,k;

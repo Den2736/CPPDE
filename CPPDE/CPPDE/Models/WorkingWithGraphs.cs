@@ -668,6 +668,7 @@ namespace C__DE.Models
                 outVariable.MainVariable.WasUsed = true;
                 outVariable.MainVariable.WasNewValueUsed = false;
                 outVariable.MainVariable.WasIdentified = true;
+                outVariable.MainVariable.WasAssignedNewValue = LineNumber;
                 if (outVariable.TypeOfNode != NodeType.Variable || (outVariable.MainVariable.Type != "int"))
                     throw new WrongOperandTypeException(LineNumber, "NumComponents", 2, "int variable");
             }
@@ -740,6 +741,7 @@ namespace C__DE.Models
                 outVariable.MainVariable.WasUsed = true;
                 outVariable.MainVariable.WasNewValueUsed = false;
                 outVariable.MainVariable.WasIdentified = true;
+                outVariable.MainVariable.WasAssignedNewValue = LineNumber;
                 if (outVariable.TypeOfNode != NodeType.Variable || (outVariable.MainVariable.Type != "int"))
                     throw new WrongOperandTypeException(LineNumber, "NumComponents", 2, "int variable");
             }
@@ -805,6 +807,7 @@ namespace C__DE.Models
                 outVariable.MainVariable.WasUsed = true;
                 outVariable.MainVariable.WasNewValueUsed = false;
                 outVariable.MainVariable.WasIdentified = true;
+                outVariable.MainVariable.WasAssignedNewValue = LineNumber;
                 if ( (outVariable.TypeOfNode != NodeType.Variable) || (outVariable.MainVariable.Type!="bool"))
                     throw new WrongOperandTypeException(LineNumber, "IsTree", 2, "bool variable");
             }
@@ -928,6 +931,7 @@ namespace C__DE.Models
                 outVariable.MainVariable.WasUsed = true;
                 outVariable.MainVariable.WasNewValueUsed = false;
                 outVariable.MainVariable.WasIdentified = true;
+                outVariable.MainVariable.WasAssignedNewValue = LineNumber;
                 if ((outVariable.TypeOfNode != NodeType.Variable) || (outVariable.MainVariable.Type != "bool"))
                     throw new WrongOperandTypeException(LineNumber, "IsFull", 2, "bool variable");
             }

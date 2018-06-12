@@ -852,6 +852,14 @@ namespace CPPDE
                 //а если лишние скобки?
                 while (CurrentLexeme.Value == ")" || OperationPriorities.Keys.Contains(CurrentLexeme.Value))
                 {
+                    try
+                    {
+                        throw new UnexpectedTokenException(CurrentLexeme.Line, CurrentLexeme.Value);
+                    }
+                    catch (SyntaxException e)
+                    {
+                        Console.WriteLine(e.Message);
+                    }
                     if (CurrentLexeme.Value == ")")
                         LexemesIterator++;
                     else
@@ -962,26 +970,37 @@ namespace CPPDE
                 {
                     Console.WriteLine(e.Message);
                 }
-                CurrentLexeme = GetLexeme();
-                //а если лишние скобки?
-                while (CurrentLexeme.Value == ")" || OperationPriorities.Keys.Contains(CurrentLexeme.Value))
+                if (LexemesIterator < LexemsForSyntaxAnalysis.Count)
                 {
-                    if (CurrentLexeme.Value == ")")
-                        LexemesIterator++;
-                    else
+                    CurrentLexeme = GetLexeme();
+                    //а если лишние скобки?
+                    while (CurrentLexeme.Value == ")" || OperationPriorities.Keys.Contains(CurrentLexeme.Value))
                     {
-                        LexemesIterator++;
                         try
                         {
-                            ParseExpression();
+                            throw new UnexpectedTokenException(CurrentLexeme.Line, CurrentLexeme.Value);
                         }
-                        catch (SyntaxException e)//надо ли тут выводить?
+                        catch (SyntaxException e)
                         {
                             Console.WriteLine(e.Message);
                         }
-                    }
-                    CurrentLexeme = GetLexeme();
+                        if (CurrentLexeme.Value == ")")
+                            LexemesIterator++;
+                        else
+                        {
+                            LexemesIterator++;
+                            try
+                            {
+                                ParseExpression();
+                            }
+                            catch (SyntaxException e)//надо ли тут выводить?
+                            {
+                                Console.WriteLine(e.Message);
+                            }
+                        }
+                        CurrentLexeme = GetLexeme();
 
+                    }
                 }
                 NodesStack.Pop();
                 CycleOperator NewCycle = new CycleOperator(false, Exp, numline);
@@ -1069,6 +1088,15 @@ namespace CPPDE
                 //а если лишние скобки?
                 while (CurrentLexeme.Value == ")" || OperationPriorities.Keys.Contains(CurrentLexeme.Value))
                 {
+                    try
+                    {
+                        throw new UnexpectedTokenException(CurrentLexeme.Line, CurrentLexeme.Value);
+                    }
+                    catch (SyntaxException e)
+                    {
+                        Console.WriteLine(e.Message);
+                    }
+
                     if (CurrentLexeme.Value == ")")
                         LexemesIterator++;
                     else
@@ -1369,7 +1397,7 @@ namespace CPPDE
                 List<AtomNode> Parameters = new List<AtomNode>();
                 AtomNode Exp;
                 while (numParameters>0)
-                {   //тут можно сделать проверку типа "недостаточно параметров"
+                { 
                     try
                     {
                         GetConcreteLexeme(",");
