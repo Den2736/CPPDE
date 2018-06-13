@@ -1333,6 +1333,8 @@ namespace CPPDE
 
             public static void Parse()
             {
+                if (LexemsForSyntaxAnalysis.Count == 0)
+                    throw new UnexpectedEOFException();
                 GetOperationsPriorities();
                 GetGraphFunctions();
                 DoLexemsList();
