@@ -1,0 +1,2 @@
+CreateGraph(g, 20);
+g = 20;

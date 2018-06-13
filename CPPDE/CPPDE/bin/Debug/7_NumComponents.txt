@@ -6,3 +6,5 @@ SetEdge(a,0,1,n);
 SetEdge(a,2,3,n);
 NumComponents(a,n);
 print(n);
+
+scan(n);

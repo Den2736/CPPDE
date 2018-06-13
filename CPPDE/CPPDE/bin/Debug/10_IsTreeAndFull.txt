@@ -1,5 +1,7 @@
+int x;
 CreateGraph(a,2);
 SetEdge(a,0,1,1);
+SetEdge(a,0,1,0);
 bool c;
 IsTree(a,c);
 print(c);
@@ -22,3 +24,5 @@ IsTree(f,c);
 print(c);
 IsFull(f,c);
 print(c);
+
+scan(x);

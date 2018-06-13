@@ -8,7 +8,7 @@ namespace C__DE.Models.Warnings
 {
     class DividingByZeroWarning:WarningMessage
     {
-        public override string Message => $"Dividing by zero in line {LineNumber}";
+        public override string Message => $"Warning: dividing by zero in line {LineNumber}";
         public int LineNumber { get; }
 
         public DividingByZeroWarning(int lineNumber)
